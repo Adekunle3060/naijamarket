@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naija Market - Authentic Nigerian Products</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #008753;
+            --secondary-color: #1EB53A;
+            --accent-color: #FCD116;
+            --dark-color: #0C0C0C;
+            --light-color: #F9F9F9;
+            --text-color: #333333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo img {
+            height: 40px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .cart-icon {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--accent-color);
+            color: var(--dark-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+            position: relative;
+        }
+
+        .page-title::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 4px;
+            background-color: var(--accent-color);
+            margin: 0.5rem auto;
+        }
+
+        .products-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-image {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+        }
+
+        .product-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .add-to-cart {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+
+        .add-to-cart:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .cart-overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            justify-content: flex-end;
+        }
+
+        .cart {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background-color: white;
+            padding: 1.5rem;
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .cart-overlay.active {
+            display: flex;
+        }
+
+        .cart-overlay.active .cart {
+            transform: translateX(0);
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .close-cart {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .cart-items {
+            margin-bottom: 2rem;
+        }
+
+        .cart-item {
+            display: flex;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 1rem;
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-item-price {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .cart-item-remove {
+            color: #ff4d4d;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .cart-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: right;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .checkout-btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 2rem 0;
+            color: #666;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .quantity-btn {
+            width: 25px;
+            height: 25px;
+            background-color: #eee;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .quantity {
+            margin: 0 0.5rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0.5rem 1rem;
+            }
+
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+
+            .products-container {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 1rem;
+            }
+
+            .product-image {
+                height: 160px;
+            }
+
+            .cart {
+                max-width: 320px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .products-container {
+                grid-template-columns: 1fr;
+            }
+
+            .cart {
+                max-width: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <!-- <img src="https://upload.wikimedia.org/wikipedia/commons/7/79/Flag_of_Nigeria.svg" alt="Nigeria Flag"> -->
+                <h1>Naija Market</h1>
+            </div>
+            <div class="cart-icon" id="cart-icon">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cart-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <h2 class="page-title">Authentic Nigerian Products</h2>
+        
+        <div class="products-container" id="products-container">
+            <!-- Products will be added dynamically with JavaScript -->
+        </div>
+    </main>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay">
+        <div class="cart">
+            <div class="cart-header">
+                <h3 class="cart-title">Your Cart</h3>
+                <button class="close-cart" id="close-cart">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="cart-items" id="cart-items">
+                <!-- Cart items will be added dynamically -->
+                <div class="empty-cart">Your cart is empty</div>
+            </div>
+            
+            <div class="cart-total" id="cart-total">
+                Total:  ₦0.00
+            </div>
+            
+            <button class="checkout-btn" id="checkout-btn">Proceed to Checkout</button>
+        </div>
+    </div>
+
+        <!-- // document.addEventListener('DOMContentLoaded', function() {
+        //     // Sample Nigerian products data
+        //     const products = [
+        //         {
+        //             id: 1,
+        //             name: "Adire Fabric",
+        //             description: "Traditional Yoruba tie-dye fabric, perfect for making unique clothing.",
+        //             price: 4500,
+        //             image: "https://img001.prntscr.com/file/img001/M9zSmJz-RQKMODRAYvke-g.jpg"
+        //         },
+        //         {
+        //             id: 2,
+        //             name: "Ofada Rice",
+        //             description: "Locally grown aromatic rice, known for its unique taste and texture.",
+        //             price: 3500,
+        //             image: "https://togajkitchen.com/wp-content/uploads/2021/11/ofada-rice-togaj-kitchen.jpg"
+        //         },
+        //         {
+        //             id: 3,
+        //             name: "Shea Butter",
+        //             description: "Pure, unrefined shea butter from Northern Nigeria, great for skin and hair.",
+        //             price: 2500,
+        //             image: "https://img001.prntscr.com/file/img001/mrHQLIqrQnOQn6cjE1edbw.jpg"
+        //         },
+        //         {
+        //             id: 4,
+        //             name: "Akara Beans",
+        //             description: "Premium brown beans perfect for making akara (bean cakes).",
+        //             price: 1800,
+        //             image: "https://img001.prntscr.com/file/img001/zIx5LPstTIWgRpTvXLeW2A.jpg"
+        //         },
+        //         {
+        //             id: 5,
+        //             name: "Palm Oil",
+        //             description: "100% pure red palm oil, rich in vitamins and antioxidants.",
+        //             price: 2000,
+        //             image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTI4TRpyEhD0JtnIwE1AGDPu0Jfx-L2iKayjQ&s"
+        //         },
+        //         {
+        //             id: 6,
+        //             name: "Kente Cloth",
+        //             description: "Handwoven kente cloth from Southwestern Nigeria.",
+        //             price: 7500,
+        //             image: "https://img001.prntscr.com/file/img001/H6CdDsQITJCgWWyxd27UJQ.jpg"
+        //         },
+        //         {
+        //             id: 7,
+        //             name: "Suya Spice Mix",
+        //             description: "Authentic suya spice blend for making Nigerian grilled meat.",
+        //             price: 1500,
+        //             image: "https://www.chefspencil.com/wp-content/uploads/Suya-1.jpg"
+        //         },
+        //         {
+        //             id: 8,
+        //             name: "Bitter Leaf",
+        //             description: "Dried bitter leaf for making traditional Nigerian soups.",
+        //             price: 1200,
+        //             image: "https://img001.prntscr.com/file/img001/XJlAs3_GQG69recaRCGnqQ.jpg"
+        //         }
+        //     ];
+
+        //     // Cart state
+        //     let cart = [];
+            
+        //     // DOM elements
+        //     const productsContainer = document.getElementById('products-container');
+        //     const cartIcon = document.getElementById('cart-icon');
+        //     const cartCount = document.getElementById('cart-count');
+        //     const cartOverlay = document.getElementById('cart-overlay');
+        //     const closeCart = document.getElementById('close-cart');
+        //     const cartItems = document.getElementById('cart-items');
+        //     const cartTotal = document.getElementById('cart-total');
+        //     const checkoutBtn = document.getElementById('checkout-btn');
+            
+        //     // Render products
+        //     function renderProducts() {
+        //         productsContainer.innerHTML = '';
+                
+        //         products.forEach(product => {
+        //             const productCard = document.createElement('div');
+        //             productCard.className = 'product-card';
+        //             productCard.innerHTML = `
+        //                 <img src="${product.image}" alt="${product.name}" class="product-image">
+        //                 <div class="product-info">
+        //                     <h3 class="product-title">${product.name}</h3>
+        //                     <p class="product-description">${product.description}</p>
+        //                     <div class="product-footer">
+        //                         <span class="product-price">₦${product.price.toLocaleString()}</span>
+        //                         <button class="add-to-cart" data-id="${product.id}">Add to Cart</button>
+        //                     </div>
+        //                 </div>
+        //             `;
+                    
+        //             productsContainer.appendChild(productCard);
+        //         });
+                
+        //         // Add event listeners to add to cart buttons
+        //         document.querySelectorAll('.add-to-cart').forEach(button => {
+        //             button.addEventListener('click', addToCart);
+        //         });
+        //     }
+            
+        //     // Add to cart function
+        //     function addToCart(e) {
+        //         const productId = parseInt(e.target.getAttribute('data-id'));
+        //         const product = products.find(p => p.id === productId);
+                
+        //         // Check if product already in cart
+        //         const existingItem = cart.find(item => item.id === productId);
+                
+        //         if (existingItem) {
+        //             existingItem.quantity += 1;
+        //         } else {
+        //             cart.push({
+        //                 ...product,
+        //                 quantity: 1
+        //             });
+        //         }
+                
+        //         updateCart();
+                
+        //         // Show feedback
+        //         e.target.textContent = 'Added!';
+        //         e.target.style.backgroundColor = 'var(--secondary-color)';
+                
+        //         setTimeout(() => {
+        //             e.target.textContent = 'Add to Cart';
+        //             e.target.style.backgroundColor = 'var(--primary-color)';
+        //         }, 1000);
+        //     }
+            
+        //     // Update cart UI
+        //     function updateCart() {
+        //         // Update cart count
+        //         const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        //         cartCount.textContent = totalItems;
+                
+        //         // Update cart items
+        //         if (cart.length === 0) {
+        //             cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+        //         } else {
+        //             cartItems.innerHTML = '';
+                    
+        //             cart.forEach(item => {
+        //                 const cartItem = document.createElement('div');
+        //                 cartItem.className = 'cart-item';
+        //                 cartItem.innerHTML = `
+        //                     <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+        //                     <div class="cart-item-details">
+        //                         <h4 class="cart-item-title">${item.name}</h4>
+        //                         <p class="cart-item-price">₦${item.price.toLocaleString()}</p>
+        //                         <div class="quantity-control">
+        //                             <button class="quantity-btn decrease" data-id="${item.id}">-</button>
+        //                             <span class="quantity">${item.quantity}</span>
+        //                             <button class="quantity-btn increase" data-id="${item.id}">+</button>
+        //                         </div>
+        //                     </div>
+        //                     <button class="cart-item-remove" data-id="${item.id}">
+        //                         <i class="fas fa-trash"></i>
+        //                     </button>
+        //                 `;
+                        
+        //                 cartItems.appendChild(cartItem);
+        //             });
+                    
+        //             // Add event listeners to quantity buttons
+        //             document.querySelectorAll('.decrease').forEach(button => {
+        //                 button.addEventListener('click', decreaseQuantity);
+        //             });
+                    
+        //             document.querySelectorAll('.increase').forEach(button => {
+        //                 button.addEventListener('click', increaseQuantity);
+        //             });
+                    
+        //             document.querySelectorAll('.cart-item-remove').forEach(button => {
+        //                 button.addEventListener('click', removeFromCart);
+        //             });
+        //         }
+                
+        //         // Update cart total
+        //         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        //         cartTotal.textContent = `Total:  ₦${total.toLocaleString()}`;
+        //     }
+            
+        //     // Decrease quantity
+        //     function decreaseQuantity(e) {
+        //         const productId = parseInt(e.target.getAttribute('data-id'));
+        //         const item = cart.find(item => item.id === productId);
+                
+        //         if (item.quantity > 1) {
+        //             item.quantity -= 1;
+        //         } else {
+        //             cart = cart.filter(item => item.id !== productId);
+        //         }
+                
+        //         updateCart();
+        //     }
+            
+        //     // Increase quantity
+        //     function increaseQuantity(e) {
+        //         const productId = parseInt(e.target.getAttribute('data-id'));
+        //         const item = cart.find(item => item.id === productId);
+                
+        //         item.quantity += 1;
+        //         updateCart();
+        //     }
+            
+        //     // Remove from cart
+        //     function removeFromCart(e) {
+        //         const productId = parseInt(e.target.closest('button').getAttribute('data-id'));
+        //         cart = cart.filter(item => item.id !== productId);
+        //         updateCart();
+        //     }
+            
+        //     // Checkout function
+        //     function checkout() {
+        //         if (cart.length === 0) {
+        //             alert('Your cart is empty!');
+        //             return;
+        //         }
+                
+        //         alert(`Order placed! Total: ₦${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}`);
+        //         cart = [];
+        //         updateCart();
+        //         cartOverlay.classList.remove('active');
+        //     }
+            
+        //     // Event listeners
+        //     cartIcon.addEventListener('click', () => {
+        //         cartOverlay.classList.add('active');
+        //     });
+            
+        //     closeCart.addEventListener('click', () => {
+        //         cartOverlay.classList.remove('active');
+        //     });
+            
+        //     checkoutBtn.addEventListener('click', checkout);
+            
+        //     // Close cart when clicking outside
+        //     cartOverlay.addEventListener('click', (e) => {
+        //         if (e.target === cartOverlay) {
+        //             cartOverlay.classList.remove('active');
+        //         }
+        //     });
+            
+        //     // Initialize the app
+        //     renderProducts();
+        //     updateCart();
+        // }); -->
+  <script src="script.js"></script>  
+</body>
+</html>
