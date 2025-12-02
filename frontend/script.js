@@ -2,13 +2,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const products = [
         { id: 1, name: "Adire Fabric", description: "Traditional Yoruba tie-dye fabric.", price: 4500, image: "https://img001.prntscr.com/file/img001/M9zSmJz-RQKMODRAYvke-g.jpg" },
         { id: 2, name: "Ofada Rice", description: "Locally grown aromatic rice.", price: 3500, image: "https://img001.prntscr.com/file/img001/ZLlbltDlRBGFdG7wKFp-GA.jpg" },
-        { id: 3, name: "Shea Butter", description: "Pure, unrefined shea butter.", price: 2500, image: "https://img001.prntscr.com/file/img001/mrHQLIqrQnOQn6cjE1edbw.jpg" }
-        // Add more as needed
+        { id: 3, name: "Shea Butter", description: "Pure, unrefined shea butter.", price: 2500, image: "https://img001.prntscr.com/file/img001/mrHQLIqrQnOQn6cjE1edbw.jpg" },
+        { id: 4, name: "Akara Beans", description: "Premium brown beans.", price: 1800, image: "https://img001.prntscr.com/file/img001/zIx5LPstTIWgRpTvXLeW2A.jpg" },
+        { id: 5, name: "Palm Oil", description: "100% pure red palm oil.", price: 2000, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTI4TRpyEhD0JtnIwE1AGDPu0Jfx-L2iKayjQ&s" },
+        { id: 6, name: "Kente Cloth", description: "Handwoven kente cloth.", price: 7500, image: "https://img001.prntscr.com/file/img001/H6CdDsQITJCgWWyxd27UJQ.jpg" },
+        { id: 7, name: "Suya Spice Mix", description: "Authentic suya spice blend.", price: 1500, image: "https://www.chefspencil.com/wp-content/uploads/Suya-1.jpg" },
+        { id: 8, name: "Bitter Leaf", description: "Dried bitter leaf.", price: 1200, image: "https://img001.prntscr.com/file/img001/XJlAs3_GQG69recaRCGnqQ.jpg" }
     ];
 
     let cart = [];
     let lastPaymentReference = null;
-    const BACKEND_URL = 'https://your-backend.onrender.com'; // replace with your backend
+    const BACKEND_URL = 'https://your-render-backend.onrender.com'; // replace with your backend URL
 
     const productsContainer = document.getElementById('products-container');
     const cartIcon = document.getElementById('cart-icon');
@@ -25,26 +29,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Render products
     function renderProducts() {
         productsContainer.innerHTML = '';
-        products.forEach(product => {
+        products.forEach(p => {
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                <img src="${product.image}" alt="${product.name}" class="product-image">
+                <img src="${p.image}" class="product-image">
                 <div class="product-info">
-                    <h3 class="product-title">${product.name}</h3>
-                    <p class="product-description">${product.description}</p>
+                    <h3 class="product-title">${p.name}</h3>
+                    <p class="product-description">${p.description}</p>
                     <div class="product-footer">
-                        <span class="product-price">₦${product.price.toLocaleString()}</span>
-                        <button class="add-to-cart" data-id="${product.id}">Add to Cart</button>
+                        <span class="product-price">₦${p.price.toLocaleString()}</span>
+                        <button class="add-to-cart" data-id="${p.id}">Add to Cart</button>
                     </div>
                 </div>
             `;
             productsContainer.appendChild(card);
         });
-
         document.querySelectorAll('.add-to-cart').forEach(btn => btn.addEventListener('click', addToCart));
     }
 
+    // Add to cart
     function addToCart(e) {
         const id = parseInt(e.target.getAttribute('data-id'));
         const product = products.find(p => p.id === id);
@@ -52,16 +56,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (existing) existing.quantity += 1;
         else cart.push({ ...product, quantity: 1 });
         updateCart();
+
         e.target.textContent = 'Added!';
         e.target.style.backgroundColor = 'var(--secondary-color)';
-        setTimeout(() => { e.target.textContent = 'Add to Cart'; e.target.style.backgroundColor = 'var(--primary-color)'; }, 1000);
+        setTimeout(() => {
+            e.target.textContent = 'Add to Cart';
+            e.target.style.backgroundColor = 'var(--primary-color)';
+        }, 1000);
     }
 
+    // Update cart UI
     function updateCart() {
-        cartCount.textContent = cart.reduce((a,b)=>a+b.quantity,0);
-        if (!cart.length) {
-            cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
-        } else {
+        cartCount.textContent = cart.reduce((t,i)=>t+i.quantity,0);
+        if (!cart.length) cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+        else {
             cartItems.innerHTML = '';
             cart.forEach(item => {
                 const div = document.createElement('div');
@@ -69,8 +77,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 div.innerHTML = `
                     <img src="${item.image}" class="cart-item-image">
                     <div class="cart-item-details">
-                        <h4 class="cart-item-title">${item.name}</h4>
-                        <p class="cart-item-price">₦${item.price.toLocaleString()}</p>
+                        <h4>${item.name}</h4>
+                        <p>₦${item.price.toLocaleString()}</p>
                         <div class="quantity-control">
                             <button class="quantity-btn decrease" data-id="${item.id}">-</button>
                             <span class="quantity">${item.quantity}</span>
@@ -81,83 +89,88 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 cartItems.appendChild(div);
             });
-
             document.querySelectorAll('.decrease').forEach(b => b.addEventListener('click', decreaseQuantity));
             document.querySelectorAll('.increase').forEach(b => b.addEventListener('click', increaseQuantity));
             document.querySelectorAll('.cart-item-remove').forEach(b => b.addEventListener('click', removeFromCart));
         }
-        cartTotal.textContent = `Total: ₦${cart.reduce((a,b)=>a+b.price*b.quantity,0).toLocaleString()}`;
+        const total = cart.reduce((t,i)=>t+i.price*i.quantity,0);
+        cartTotal.textContent = `Total: ₦${total.toLocaleString()}`;
     }
 
     function decreaseQuantity(e) {
         const id = parseInt(e.target.getAttribute('data-id'));
-        const item = cart.find(i => i.id === id);
-        if (item.quantity > 1) item.quantity -= 1;
-        else cart = cart.filter(i => i.id !== id);
+        const item = cart.find(i=>i.id===id);
+        if(item.quantity>1) item.quantity-=1;
+        else cart=cart.filter(i=>i.id!==id);
         updateCart();
     }
 
     function increaseQuantity(e) {
-        const id = parseInt(e.target.getAttribute('data-id'));
-        const item = cart.find(i => i.id === id);
-        item.quantity += 1;
+        const id=parseInt(e.target.getAttribute('data-id'));
+        cart.find(i=>i.id===id).quantity+=1;
         updateCart();
     }
 
     function removeFromCart(e) {
-        const id = parseInt(e.target.getAttribute('data-id'));
-        cart = cart.filter(i => i.id !== id);
+        const id=parseInt(e.target.getAttribute('data-id'));
+        cart = cart.filter(i=>i.id!==id);
         updateCart();
     }
 
-    // Checkout using Paystack
-    checkoutBtn.addEventListener('click', async () => {
-        if (!cart.length) return alert('Cart is empty!');
-        const email = prompt('Enter your email for payment confirmation:');
-        if (!email) return alert('Email is required!');
-        const totalAmount = cart.reduce((a,b)=>a+b.price*b.quantity,0);
+    // Checkout
+    async function checkout() {
+        if(!cart.length) return alert('Cart is empty!');
+        const email = prompt('Enter your email for order confirmation:');
+        if(!email) return alert('Email required');
+
+        const totalAmount = cart.reduce((t,i)=>t+i.price*i.quantity,0);
 
         try {
             const res = await fetch(`${BACKEND_URL}/api/checkout`, {
-                method: 'POST',
-                headers: { 'Content-Type':'application/json' },
-                body: JSON.stringify({ cart, totalAmount, email })
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({cart,totalAmount,email})
             });
             const data = await res.json();
-            if (data.status === 'success') {
+            if(data.status==='success') {
                 lastPaymentReference = data.reference;
                 const handler = PaystackPop.setup({
                     key: data.publicKey,
-                    email: email,
+                    email,
                     amount: totalAmount*100,
                     ref: data.reference,
-                    callback: function(response){ alert('Payment complete! Click Verify Payment.'); },
-                    onClose: function(){ alert('Payment cancelled'); }
+                    onClose: function(){ alert('Payment popup closed'); },
+                    callback: function(response){
+                        alert('Payment completed! Click "Verify Payment" to confirm.');
+                    }
                 });
                 handler.openIframe();
-            } else alert(data.message || 'Payment initialization failed');
-        } catch(err) { console.error(err); alert('Error initiating payment'); }
-    });
+            } else alert(data.message || 'Payment failed');
+        } catch(err){ console.error(err); alert('Server error'); }
+    }
 
     // Verify payment manually
-    verifyPaymentBtn.addEventListener('click', async () => {
-        if (!lastPaymentReference) return alert('No recent payment to verify!');
+    async function verifyPayment() {
+        if(!lastPaymentReference) return alert('No payment to verify!');
         try {
             const res = await fetch(`${BACKEND_URL}/api/verify-payment?reference=${lastPaymentReference}`);
             const text = await res.text();
             alert(text);
-            if (text.includes('Payment verified')) {
+            if(text.includes('Payment verified')) {
                 cart = [];
                 updateCart();
                 cartOverlay.classList.remove('active');
                 paymentSuccessOverlay.style.display = 'flex';
             }
-        } catch(err) { console.error(err); alert('Error verifying payment'); }
-    });
+        } catch(err){ console.error(err); alert('Verification error'); }
+    }
 
-    cartIcon.addEventListener('click', ()=> cartOverlay.classList.add('active'));
-    closeCart.addEventListener('click', ()=> cartOverlay.classList.remove('active'));
-    paymentSuccessOverlay.addEventListener('click', (e)=> { if(e.target===paymentSuccessOverlay) paymentSuccessOverlay.style.display='none'; });
+    // Event listeners
+    cartIcon.addEventListener('click',()=>cartOverlay.classList.add('active'));
+    closeCart.addEventListener('click',()=>cartOverlay.classList.remove('active'));
+    cartOverlay.addEventListener('click',(e)=>{if(e.target===cartOverlay) cartOverlay.classList.remove('active')});
+    checkoutBtn.addEventListener('click', checkout);
+    verifyPaymentBtn.addEventListener('click', verifyPayment);
     closeSuccessBtn.addEventListener('click', ()=> paymentSuccessOverlay.style.display='none');
 
     renderProducts();
