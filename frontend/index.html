@@ -21,6 +21,7 @@
         body { background-color: var(--light-color); color: var(--text-color); line-height: 1.6; }
         header { background-color: var(--primary-color); color: white; padding: 1rem 2rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
         .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
+        .logo { display: flex; align-items: center; gap: 10px; }
         .logo h1 { font-size: 1.5rem; font-weight: 700; }
         .cart-icon { position: relative; cursor: pointer; font-size: 1.5rem; }
         .cart-count { position: absolute; top: -10px; right: -10px; background-color: var(--accent-color); color: var(--dark-color); border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
@@ -59,8 +60,8 @@
         .cart-item-price { color: var(--primary-color); font-weight: bold; }
         .cart-item-remove { color: #ff4d4d; background: none; border: none; cursor: pointer; font-size: 0.9rem; }
 
-        .cart-total { font-size: 1.2rem; font-weight: bold; text-align: right; margin-bottom: 1rem; }
-        .checkout-btn { width: 100%; padding: 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: var(--transition); margin-bottom: 10px; }
+        .cart-total { font-size: 1.2rem; font-weight: bold; text-align: right; margin-bottom: 1.5rem; }
+        .checkout-btn { width: 100%; padding: 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: var(--transition); margin-bottom: 0.5rem; }
         .checkout-btn:hover { background-color: var(--secondary-color); }
 
         .empty-cart { text-align: center; padding: 2rem 0; color: #666; }
@@ -68,23 +69,6 @@
         .quantity-control { display: flex; align-items: center; margin-top: 0.5rem; }
         .quantity-btn { width: 25px; height: 25px; background-color: #eee; border: none; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
         .quantity { margin: 0 0.5rem; min-width: 20px; text-align: center; }
-
-        /* Payment Success Overlay */
-        .payment-success-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.95);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .payment-success-message { text-align: center; padding: 2rem; }
-        .payment-success-message h3 { color: var(--primary-color); margin: 1rem 0; }
-        .payment-success-message p { color: #333; margin-bottom: 1.5rem; }
 
         @media (max-width: 768px) { 
             .products-container { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
@@ -100,7 +84,9 @@
 <body>
     <header>
         <div class="header-container">
-            <div class="logo"><h1>Naija Market</h1></div>
+            <div class="logo">
+                <h1>Naija Market</h1>
+            </div>
             <div class="cart-icon" id="cart-icon">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count" id="cart-count">0</span>
@@ -127,21 +113,11 @@
 
             <div class="cart-total" id="cart-total">Total: ₦0.00</div>
             <button class="checkout-btn" id="checkout-btn">Proceed to Checkout</button>
-            <button class="checkout-btn" id="verify-payment-btn" style="background-color: #FFA500;">Verify Payment</button>
-
-            <!-- Payment Success Overlay -->
-            <div class="payment-success-overlay" id="payment-success-overlay">
-                <div class="payment-success-message">
-                    <i class="fas fa-check-circle" style="color: green; font-size: 3rem;"></i>
-                    <h3>Payment Successful!</h3>
-                    <p>Thank you for your order. A confirmation email has been sent.</p>
-                    <button id="close-success-btn" class="checkout-btn">Close</button>
-                </div>
-            </div>
+            <button class="checkout-btn" id="verify-payment-btn">Verify Payment</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script src="https://js.paystack.co/v1/inline.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

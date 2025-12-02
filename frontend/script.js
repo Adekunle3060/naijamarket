@@ -23,8 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
     const verifyPaymentBtn = document.getElementById('verify-payment-btn');
-    const paymentSuccessOverlay = document.getElementById('payment-success-overlay');
-    const closeSuccessBtn = document.getElementById('close-success-btn');
 
     // Render products
     function renderProducts() {
@@ -104,20 +102,18 @@ document.addEventListener('DOMContentLoaded', function() {
         else cart=cart.filter(i=>i.id!==id);
         updateCart();
     }
-
-    function increaseQuantity(e) {
-        const id=parseInt(e.target.getAttribute('data-id'));
-        cart.find(i=>i.id===id).quantity+=1;
-        updateCart();
+    function increaseQuantity(e) { 
+        const id = parseInt(e.target.getAttribute('data-id')); 
+        cart.find(i=>i.id===id).quantity+=1; 
+        updateCart(); 
+    }
+    function removeFromCart(e) { 
+        const id = parseInt(e.target.closest('button').getAttribute('data-id')); 
+        cart=cart.filter(i=>i.id!==id); 
+        updateCart(); 
     }
 
-    function removeFromCart(e) {
-        const id=parseInt(e.target.getAttribute('data-id'));
-        cart = cart.filter(i=>i.id!==id);
-        updateCart();
-    }
-
-    // Checkout
+    // Checkout with Paystack popup
     async function checkout() {
         if(!cart.length) return alert('Cart is empty!');
         const email = prompt('Enter your email for order confirmation:');
@@ -127,52 +123,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const res = await fetch(`${BACKEND_URL}/api/checkout`, {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
                 body: JSON.stringify({cart,totalAmount,email})
             });
             const data = await res.json();
+
             if(data.status==='success') {
-                lastPaymentReference = data.reference;
                 const handler = PaystackPop.setup({
                     key: data.publicKey,
-                    email,
-                    amount: totalAmount*100,
+                    email: email,
+                    amount: totalAmount * 100,
                     ref: data.reference,
                     onClose: function(){ alert('Payment popup closed'); },
                     callback: function(response){
-                        alert('Payment completed! Click "Verify Payment" to confirm.');
+                        lastPaymentReference = response.reference;
+                        alert('Payment completed! Click "Verify Payment" to check status.');
+                        cart = [];
+                        updateCart();
                     }
                 });
                 handler.openIframe();
-            } else alert(data.message || 'Payment failed');
-        } catch(err){ console.error(err); alert('Server error'); }
+            } else alert('Error initializing payment: '+data.message);
+        } catch(err){ console.error(err); alert('Server error, please try again.'); }
     }
 
-    // Verify payment manually
-    async function verifyPayment() {
+    // Redirect to payment-status.html with reference
+    function verifyPayment() {
         if(!lastPaymentReference) return alert('No payment to verify!');
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/verify-payment?reference=${lastPaymentReference}`);
-            const text = await res.text();
-            alert(text);
-            if(text.includes('Payment verified')) {
-                cart = [];
-                updateCart();
-                cartOverlay.classList.remove('active');
-                paymentSuccessOverlay.style.display = 'flex';
-            }
-        } catch(err){ console.error(err); alert('Verification error'); }
+        window.location.href = `payment-status.html?reference=${lastPaymentReference}`;
     }
 
     // Event listeners
     cartIcon.addEventListener('click',()=>cartOverlay.classList.add('active'));
     closeCart.addEventListener('click',()=>cartOverlay.classList.remove('active'));
     cartOverlay.addEventListener('click',(e)=>{if(e.target===cartOverlay) cartOverlay.classList.remove('active')});
-    checkoutBtn.addEventListener('click', checkout);
-    verifyPaymentBtn.addEventListener('click', verifyPayment);
-    closeSuccessBtn.addEventListener('click', ()=> paymentSuccessOverlay.style.display='none');
+    checkoutBtn.addEventListener('click',checkout);
+    verifyPaymentBtn.addEventListener('click',verifyPayment);
 
+    // Initialize
     renderProducts();
     updateCart();
 });
