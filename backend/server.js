@@ -11,7 +11,7 @@ const app = express();
 
 // ---------- CONFIGURATION ----------
 const FRONTEND_URLS = [
-    process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app/'
+    process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app'
 ];
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
@@ -22,7 +22,14 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Order schema
+// ---------- MIDDLEWARE ----------
+app.use(cors({
+    origin: FRONTEND_URLS,
+    methods: ['GET', 'POST']
+}));
+app.use(bodyParser.json());
+
+// ---------- SCHEMA ----------
 const orderSchema = new mongoose.Schema({
     email: String,
     cart: Array,
@@ -34,17 +41,8 @@ const orderSchema = new mongoose.Schema({
 
 const Order = mongoose.model('Order', orderSchema);
 
-// ---------- MIDDLEWARE ----------
-app.use(cors({
-    origin: FRONTEND_URLS,
-    methods: ['GET', 'POST']
-}));
-app.use(bodyParser.json());
-
 // ---------- ROUTES ----------
-app.get("/", (req, res) => {
-    res.send("Backend is running...");
-});
+app.get("/", (req, res) => res.send("Backend is running..."));
 
 // Initialize payment
 app.post('/api/checkout', async (req, res) => {
@@ -59,7 +57,7 @@ app.post('/api/checkout', async (req, res) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                email: email,
+                email,
                 amount: totalAmount * 100,
                 currency: 'NGN',
                 metadata: { cart: JSON.stringify(cart) },
@@ -145,11 +143,9 @@ app.get('/api/verify-payment', async (req, res) => {
     }
 });
 
-// Get all orders (admin route, protect this in production)
-// Admin orders route (protected by password)
+// Admin route (password protected)
 app.get('/api/orders', async (req, res) => {
-    const adminPassword = req.headers['x-admin-password']; // Client sends this header
-
+    const adminPassword = req.headers['x-admin-password'];
     if (adminPassword !== process.env.ADMIN_PASSWORD) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -162,7 +158,6 @@ app.get('/api/orders', async (req, res) => {
         res.status(500).json({ message: 'Error fetching orders' });
     }
 });
-
 
 // ---------- SERVER ----------
 const PORT = process.env.PORT || 5000;
