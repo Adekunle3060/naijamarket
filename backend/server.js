@@ -33,6 +33,9 @@ app.use(cors({
 app.use(bodyParser.json());
 
 // ---------- ROUTES ----------
+app.get("/", (req, res) => {
+    res.send("Backend is running...");
+});
 
 // Initialize payment
 app.post('/api/checkout', async (req, res) => {
