@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
 
     let cart = [];
-    const BACKEND_URL = 'https://your-render-backend.onrender.com'; // replace with your backend
+    const BACKEND_URL = 'https://naijamarket-gtv0.onrender.com'; // replace with your backend
 
     const productsContainer = document.getElementById('products-container');
     const cartIcon = document.getElementById('cart-icon');
