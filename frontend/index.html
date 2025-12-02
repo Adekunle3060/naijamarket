@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naija Market - Authentic Nigerian Products</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #008753;
+            --secondary-color: #1EB53A;
+            --accent-color: #FCD116;
+            --dark-color: #0C0C0C;
+            --light-color: #F9F9F9;
+            --text-color: #333333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--light-color); color: var(--text-color); line-height: 1.6; }
+        header { background-color: var(--primary-color); color: white; padding: 1rem 2rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo h1 { font-size: 1.5rem; font-weight: 700; }
+        .cart-icon { position: relative; cursor: pointer; font-size: 1.5rem; }
+        .cart-count { position: absolute; top: -10px; right: -10px; background-color: var(--accent-color); color: var(--dark-color); border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
+
+        main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .page-title { text-align: center; margin-bottom: 2rem; color: var(--primary-color); position: relative; }
+        .page-title::after { content: ''; display: block; width: 100px; height: 4px; background-color: var(--accent-color); margin: 0.5rem auto; }
+
+        .products-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+        .product-card { background-color: white; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); transition: var(--transition); }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); }
+        .product-image { height: 200px; width: 100%; object-fit: cover; }
+        .product-info { padding: 1.5rem; }
+        .product-title { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--dark-color); }
+        .product-description { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+        .product-footer { display: flex; justify-content: space-between; align-items: center; }
+        .product-price { font-weight: bold; color: var(--primary-color); font-size: 1.2rem; }
+        .add-to-cart { background-color: var(--primary-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: var(--transition); font-weight: 600; }
+        .add-to-cart:hover { background-color: var(--secondary-color); }
+
+        /* Cart overlay */
+        .cart-overlay { position: fixed; top: 0; right: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; display: none; justify-content: flex-end; }
+        .cart { width: 100%; max-width: 400px; height: 100%; background-color: white; padding: 1.5rem; overflow-y: auto; transform: translateX(100%); transition: transform 0.3s ease; position: relative; }
+        .cart-overlay.active { display: flex; }
+        .cart-overlay.active .cart { transform: translateX(0); }
+
+        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        .cart-title { font-size: 1.5rem; color: var(--primary-color); }
+        .close-cart { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+
+        .cart-items { margin-bottom: 2rem; }
+        .cart-item { display: flex; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        .cart-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-right: 1rem; }
+        .cart-item-details { flex: 1; }
+        .cart-item-title { font-size: 1rem; margin-bottom: 0.5rem; }
+        .cart-item-price { color: var(--primary-color); font-weight: bold; }
+        .cart-item-remove { color: #ff4d4d; background: none; border: none; cursor: pointer; font-size: 0.9rem; }
+
+        .cart-total { font-size: 1.2rem; font-weight: bold; text-align: right; margin-bottom: 1.5rem; }
+        .checkout-btn { width: 100%; padding: 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: var(--transition); }
+        .checkout-btn:hover { background-color: var(--secondary-color); }
+
+        .empty-cart { text-align: center; padding: 2rem 0; color: #666; }
+
+        .quantity-control { display: flex; align-items: center; margin-top: 0.5rem; }
+        .quantity-btn { width: 25px; height: 25px; background-color: #eee; border: none; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .quantity { margin: 0 0.5rem; min-width: 20px; text-align: center; }
+
+        /* Payment Success Overlay */
+        .payment-success-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .payment-success-message { text-align: center; padding: 2rem; }
+        .payment-success-message h3 { color: var(--primary-color); margin: 1rem 0; }
+        .payment-success-message p { color: #333; margin-bottom: 1.5rem; }
+
+        @media (max-width: 768px) { 
+            .products-container { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+            .product-image { height: 160px; }
+            .cart { max-width: 320px; }
+        }
+        @media (max-width: 480px) { 
+            .products-container { grid-template-columns: 1fr; }
+            .cart { max-width: 280px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <h1>Naija Market</h1>
+            </div>
+            <div class="cart-icon" id="cart-icon">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cart-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <h2 class="page-title">Authentic Nigerian Products</h2>
+        <div class="products-container" id="products-container"></div>
+    </main>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay">
+        <div class="cart">
+            <div class="cart-header">
+                <h3 class="cart-title">Your Cart</h3>
+                <button class="close-cart" id="close-cart"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="cart-items" id="cart-items">
+                <div class="empty-cart">Your cart is empty</div>
+            </div>
+
+            <div class="cart-total" id="cart-total">Total: ₦0.00</div>
+            <button class="checkout-btn" id="checkout-btn">Proceed to Checkout</button>
+
+            <!-- Payment Success Overlay -->
+            <div class="payment-success-overlay" id="payment-success-overlay">
+                <div class="payment-success-message">
+                    <i class="fas fa-check-circle" style="color: green; font-size: 3rem;"></i>
+                    <h3>Payment Successful!</h3>
+                    <p>Thank you for your order. A confirmation email has been sent.</p>
+                    <button id="close-success-btn" class="checkout-btn">Close</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
