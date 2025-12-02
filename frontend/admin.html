@@ -1,102 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Naija Market - Admin Orders</title>
-<style>
-body { font-family: 'Segoe UI', sans-serif; background: #f9f9f9; margin:0; padding:2rem; }
-h1 { text-align:center; color:#008753; margin-bottom:2rem; }
-table { width:100%; border-collapse: collapse; background:white; box-shadow:0 4px 6px rgba(0,0,0,0.1); border-radius:8px; overflow:hidden; }
-th, td { padding:0.75rem 1rem; text-align:left; border-bottom:1px solid #eee; }
-th { background-color:#008753; color:white; }
-tr:last-child td { border-bottom:none; }
-.items-list { max-width:300px; }
-.paid { color:green; font-weight:bold; }
-.unpaid { color:red; font-weight:bold; }
-#login-container { max-width:400px; margin: 5rem auto; padding:2rem; background:white; box-shadow:0 4px 6px rgba(0,0,0,0.1); border-radius:8px; text-align:center; }
-input { width:100%; padding:0.5rem; margin:0.5rem 0; border-radius:4px; border:1px solid #ccc; }
-button { padding:0.5rem 1rem; background:#008753; color:white; border:none; border-radius:4px; cursor:pointer; }
-button:hover { background:#1EB53A; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naija Market - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #008753;
+            --secondary-color: #1EB53A;
+            --accent-color: #FCD116;
+            --dark-color: #0C0C0C;
+            --light-color: #F9F9F9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        #login-section {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #login-section input {
+            padding: 0.5rem;
+            width: 250px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        #login-section button {
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #login-section button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        #orders-section {
+            display: none;
+        }
+
+        #orders-container {
+            margin-top: 20px;
+        }
+
+        .order-card {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .order-card p {
+            margin: 5px 0;
+        }
+
+        @media(max-width:768px){
+            #login-section input {
+                width: 180px;
+                margin-bottom: 10px;
+            }
+
+            #login-section button {
+                width: 120px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <header>
+        Naija Market Admin Dashboard
+    </header>
 
-<div id="login-container">
-    <h2>Admin Login</h2>
-    <input type="password" id="admin-password" placeholder="Enter admin password">
-    <button id="login-btn">Login</button>
-    <p id="login-error" style="color:red;"></p>
-</div>
+    <main>
+        <!-- Login Section -->
+        <div id="login-section">
+            <h2>Admin Login</h2>
+            <input type="password" id="admin-password" placeholder="Enter admin password">
+            <button id="login-btn">Login</button>
+        </div>
 
-<div id="orders-container" style="display:none;">
-    <h1>Naija Market - Orders Dashboard</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Email</th>
-                <th>Items</th>
-                <th>Total (₦)</th>
-                <th>Paid</th>
-                <th>Reference</th>
-            </tr>
-        </thead>
-        <tbody id="orders-table-body">
-            <tr><td colspan="6" style="text-align:center;">Loading orders...</td></tr>
-        </tbody>
-    </table>
-</div>
+        <!-- Orders Section -->
+        <div id="orders-section">
+            <h2>Live Orders</h2>
+            <div id="orders-container">
+                <p>Loading orders...</p>
+            </div>
+        </div>
+    </main>
 
-<script>
-const BACKEND_URL = 'https://naijamarket-gtv0.onrender.com'; // Render backend
-
-document.getElementById('login-btn').addEventListener('click', async () => {
-    const password = document.getElementById('admin-password').value;
-    const tbody = document.getElementById('orders-table-body');
-    const loginError = document.getElementById('login-error');
-
-    try {
-        const res = await fetch(`${BACKEND_URL}/api/orders`, {
-            headers: { 'x-admin-password': password }
-        });
-
-        if (res.status === 401) {
-            loginError.textContent = 'Incorrect password';
-            return;
-        }
-
-        const orders = await res.json();
-        document.getElementById('login-container').style.display = 'none';
-        document.getElementById('orders-container').style.display = 'block';
-
-        tbody.innerHTML = '';
-
-        if (!orders.length) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No orders yet</td></tr>';
-            return;
-        }
-
-        orders.forEach(order => {
-            const tr = document.createElement('tr');
-            const items = order.cart.map(i => `${i.name} x ${i.quantity}`).join(', ');
-            tr.innerHTML = `
-                <td>${new Date(order.date).toLocaleString()}</td>
-                <td>${order.email}</td>
-                <td class="items-list">${items}</td>
-                <td>₦${order.totalAmount.toLocaleString()}</td>
-                <td class="${order.paid ? 'paid' : 'unpaid'}">${order.paid ? 'Yes' : 'No'}</td>
-                <td>${order.reference}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-    } catch (err) {
-        console.error(err);
-        loginError.textContent = 'Error fetching orders';
-    }
-});
-</script>
-
+    <script src="admin.js"></script>
 </body>
 </html>

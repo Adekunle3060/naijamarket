@@ -10,7 +10,10 @@ dotenv.config();
 const app = express();
 
 // ---------- CONFIGURATION ----------
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app';
+const FRONTEND_URLS = [
+    process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app/'
+];
+
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY;
 
@@ -19,24 +22,29 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// ---------- ORDER SCHEMA ----------
+// Order schema
 const orderSchema = new mongoose.Schema({
     email: String,
     cart: Array,
     totalAmount: Number,
     reference: String,
-    paid: { type: Boolean, default: false },
+    paid: Boolean,
     date: { type: Date, default: Date.now }
 });
 
 const Order = mongoose.model('Order', orderSchema);
 
 // ---------- MIDDLEWARE ----------
-app.use(cors({ origin: FRONTEND_URL, methods: ['GET', 'POST'] }));
+app.use(cors({
+    origin: FRONTEND_URLS,
+    methods: ['GET', 'POST']
+}));
 app.use(bodyParser.json());
 
 // ---------- ROUTES ----------
-app.get("/", (req, res) => res.send("Backend is running..."));
+app.get("/", (req, res) => {
+    res.send("Backend is running...");
+});
 
 // Initialize payment
 app.post('/api/checkout', async (req, res) => {
@@ -44,9 +52,6 @@ app.post('/api/checkout', async (req, res) => {
     if (!cart || !totalAmount || !email) return res.status(400).json({ status: 'error', message: 'Missing data' });
 
     try {
-        // Create order in DB with paid: false
-        const order = await Order.create({ email, cart, totalAmount, paid: false });
-
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
             method: 'POST',
             headers: {
@@ -57,8 +62,8 @@ app.post('/api/checkout', async (req, res) => {
                 email: email,
                 amount: totalAmount * 100,
                 currency: 'NGN',
-                metadata: { cart: JSON.stringify(cart) },
-                callback_url: `${FRONTEND_URL}/payment-status.html`
+                metadata: { cart: JSON.stringify(cart) }
+                // callback_url removed for inline payment
             })
         });
 
@@ -81,7 +86,7 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
-// Verify payment (called by payment-status page)
+// Verify payment
 app.get('/api/verify-payment', async (req, res) => {
     const reference = req.query.reference;
     if (!reference) return res.send('Payment reference missing');
@@ -102,13 +107,22 @@ app.get('/api/verify-payment', async (req, res) => {
             const amount = data.data.amount / 100;
             const items = JSON.parse(data.data.metadata.cart);
 
-            // Update order to paid: true
-            await Order.findOneAndUpdate({ reference }, { paid: true });
+            // Save order in MongoDB
+            await Order.create({
+                email,
+                cart: items,
+                totalAmount: amount,
+                reference,
+                paid: true
+            });
 
             // Send confirmation email
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
-                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
             });
 
             await transporter.sendMail({
@@ -120,17 +134,18 @@ app.get('/api/verify-payment', async (req, res) => {
                        <p>Total Paid: ₦${amount.toLocaleString()}</p>`
             });
 
-            res.send('Payment verified and order updated.');
+            res.send('Payment verified, order saved, and email sent.');
         } else {
             res.send('Payment verification failed.');
         }
+
     } catch (err) {
         console.error(err);
         res.send('Error verifying payment.');
     }
 });
 
-// Admin: get all orders
+// Get all orders (admin route)
 app.get('/api/orders', async (req, res) => {
     const adminPassword = req.headers['x-admin-password'];
     if (adminPassword !== process.env.ADMIN_PASSWORD) return res.status(401).json({ message: 'Unauthorized' });
@@ -141,21 +156,6 @@ app.get('/api/orders', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Error fetching orders' });
-    }
-});
-
-// Get order by reference (for payment status page)
-app.get('/api/orders-by-reference', async (req, res) => {
-    const reference = req.query.reference;
-    if (!reference) return res.status(400).json({ message: 'Reference missing' });
-
-    try {
-        const order = await Order.findOne({ reference });
-        if (!order) return res.status(404).json({ message: 'Order not found' });
-        res.json(order);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
     }
 });
 
