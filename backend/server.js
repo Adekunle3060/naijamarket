@@ -146,7 +146,14 @@ app.get('/api/verify-payment', async (req, res) => {
 });
 
 // Get all orders (admin route, protect this in production)
+// Admin orders route (protected by password)
 app.get('/api/orders', async (req, res) => {
+    const adminPassword = req.headers['x-admin-password']; // Client sends this header
+
+    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     try {
         const orders = await Order.find().sort({ date: -1 });
         res.json(orders);
@@ -155,6 +162,7 @@ app.get('/api/orders', async (req, res) => {
         res.status(500).json({ message: 'Error fetching orders' });
     }
 });
+
 
 // ---------- SERVER ----------
 const PORT = process.env.PORT || 5000;
