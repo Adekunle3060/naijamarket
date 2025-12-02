@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Status - Naija Market</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 2rem; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+    h1 { color: #008753; margin-bottom: 1rem; }
+    .status-paid { color: green; font-weight: bold; }
+    .status-unpaid { color: red; font-weight: bold; }
+    .order-details { margin-top: 1rem; text-align: left; }
+    .order-details p { margin: 0.5rem 0; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Payment Status</h1>
+    <p id="status-message">Checking payment...</p>
+
+    <div class="order-details" id="order-details" style="display:none;">
+        <p><strong>Email:</strong> <span id="email"></span></p>
+        <p><strong>Items:</strong> <span id="items"></span></p>
+        <p><strong>Total Paid:</strong> ₦<span id="total"></span></p>
+        <p><strong>Reference:</strong> <span id="reference"></span></p>
+        <p><strong>Status:</strong> <span id="status-text"></span></p>
+    </div>
+</div>
+
+<script>
+const BACKEND_URL = 'https://your-render-backend.onrender.com'; // Update with your backend
+
+// Get reference from URL query string
+const urlParams = new URLSearchParams(window.location.search);
+const reference = urlParams.get('reference');
+
+async function checkPayment() {
+    if (!reference) {
+        document.getElementById('status-message').textContent = 'Payment reference missing.';
+        return;
+    }
+
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/verify-payment?reference=${reference}`);
+        const text = await res.text();
+
+        // Since our backend currently responds with a simple text message
+        if (text.includes('order updated')) {
+            document.getElementById('status-message').textContent = 'Payment Successful!';
+            const orderData = await fetch(`${BACKEND_URL}/api/orders-by-reference?reference=${reference}`).then(r => r.json());
+
+            document.getElementById('order-details').style.display = 'block';
+            document.getElementById('email').textContent = orderData.email;
+            document.getElementById('items').textContent = orderData.cart.map(i => `${i.name} x ${i.quantity}`).join(', ');
+            document.getElementById('total').textContent = orderData.totalAmount.toLocaleString();
+            document.getElementById('reference').textContent = orderData.reference;
+            document.getElementById('status-text').textContent = orderData.paid ? 'Paid' : 'Unpaid';
+            document.getElementById('status-text').className = orderData.paid ? 'status-paid' : 'status-unpaid';
+        } else {
+            document.getElementById('status-message').textContent = 'Payment not successful or still pending.';
+        }
+    } catch (err) {
+        console.error(err);
+        document.getElementById('status-message').textContent = 'Error checking payment.';
+    }
+}
+
+checkPayment();
+</script>
+</body>
+</html>

@@ -45,6 +45,7 @@ const Order = mongoose.model('Order', orderSchema);
 app.get("/", (req, res) => res.send("Backend is running..."));
 
 // Initialize payment
+// Initialize payment
 app.post('/api/checkout', async (req, res) => {
     const { cart, totalAmount, email } = req.body;
     if (!cart || !totalAmount || !email) return res.status(400).json({ status: 'error', message: 'Missing data' });
@@ -57,11 +58,12 @@ app.post('/api/checkout', async (req, res) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                email,
+                email: email,
                 amount: totalAmount * 100,
                 currency: 'NGN',
                 metadata: { cart: JSON.stringify(cart) },
-                callback_url: `${process.env.BACKEND_URL}/api/verify-payment`
+                // Redirect to frontend payment status page after payment
+                callback_url: `${process.env.FRONTEND_URL}/payment-status.html`
             })
         });
 
@@ -84,6 +86,7 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
+
 // Verify payment
 app.get('/api/verify-payment', async (req, res) => {
     const reference = req.query.reference;
@@ -101,38 +104,39 @@ app.get('/api/verify-payment', async (req, res) => {
         const data = await response.json();
 
         if (data.status && data.data.status === 'success') {
-            const email = data.data.customer.email;
-            const amount = data.data.amount / 100;
-            const items = JSON.parse(data.data.metadata.cart);
+            const orderId = data.data.metadata.orderId;
+            const order = await Order.findById(orderId);
 
-            // Save order in MongoDB
-            await Order.create({
-                email,
-                cart: items,
-                totalAmount: amount,
-                reference,
-                paid: true
-            });
+            if (order) {
+                order.paid = true;
+                await order.save();
 
-            // Send confirmation email
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
+                const email = data.data.customer.email;
+                const amount = data.data.amount / 100;
+                const items = JSON.parse(data.data.metadata.cart);
 
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'Order Confirmed - Naija Market',
-                html: `<h3>Thank you for your order!</h3>
-                       <p>Items: ${items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
-                       <p>Total Paid: ₦${amount.toLocaleString()}</p>`
-            });
+                // Send confirmation email
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
 
-            res.send('Payment verified, order saved, and email sent.');
+                await transporter.sendMail({
+                    from: process.env.EMAIL_USER,
+                    to: email,
+                    subject: 'Order Confirmed - Naija Market',
+                    html: `<h3>Thank you for your order!</h3>
+                           <p>Items: ${items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
+                           <p>Total Paid: ₦${amount.toLocaleString()}</p>`
+                });
+
+                res.send('Payment verified, order updated, and email sent.');
+            } else {
+                res.send('Order not found.');
+            }
         } else {
             res.send('Payment verification failed.');
         }
@@ -140,6 +144,21 @@ app.get('/api/verify-payment', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.send('Error verifying payment.');
+    }
+});
+
+// Get order by reference (for frontend payment status page)
+app.get('/api/orders-by-reference', async (req, res) => {
+    const reference = req.query.reference;
+    if (!reference) return res.status(400).json({ message: 'Reference missing' });
+
+    try {
+        const order = await Order.findOne({ reference });
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        res.json(order);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

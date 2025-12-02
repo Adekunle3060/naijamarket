@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // ---------- CONFIG ----------
-    const BACKEND_URL = 'https://naijamarket-gtv0.onrender.com'; // Replace with your Render backend URL
-
+    // Sample Nigerian products data
     const products = [
         { id: 1, name: "Adire Fabric", description: "Traditional Yoruba tie-dye fabric, perfect for making unique clothing.", price: 4500, image: "https://img001.prntscr.com/file/img001/M9zSmJz-RQKMODRAYvke-g.jpg" },
         { id: 2, name: "Ofada Rice", description: "Locally grown aromatic rice, known for its unique taste and texture.", price: 3500, image: "https://img001.prntscr.com/file/img001/ZLlbltDlRBGFdG7wKFp-GA.jpg" },
@@ -15,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let cart = [];
 
-    // ---------- DOM ELEMENTS ----------
+    // DOM elements
     const productsContainer = document.getElementById('products-container');
     const cartIcon = document.getElementById('cart-icon');
     const cartCount = document.getElementById('cart-count');
@@ -24,17 +22,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartItems = document.getElementById('cart-items');
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
-    const paymentSuccessOverlay = document.getElementById('payment-success-overlay');
-    const closeSuccessBtn = document.getElementById('close-success-btn');
 
-    // ---------- RENDER PRODUCTS ----------
+    const BACKEND_URL = 'https://your-render-backend.onrender.com'; // Update with your backend URL
+
+    // Render products
     function renderProducts() {
         productsContainer.innerHTML = '';
-
         products.forEach(product => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
                 <img src="${product.image}" alt="${product.name}" class="product-image">
                 <div class="product-info">
                     <h3 class="product-title">${product.name}</h3>
@@ -45,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             `;
-            productsContainer.appendChild(card);
+            productsContainer.appendChild(productCard);
         });
 
         document.querySelectorAll('.add-to-cart').forEach(button => {
@@ -53,13 +50,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Add to cart
     function addToCart(e) {
-        const productId = parseInt(e.target.dataset.id);
+        const productId = parseInt(e.target.getAttribute('data-id'));
         const product = products.find(p => p.id === productId);
-        const existing = cart.find(item => item.id === productId);
 
-        if (existing) existing.quantity += 1;
-        else cart.push({ ...product, quantity: 1 });
+        const existingItem = cart.find(item => item.id === productId);
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({ ...product, quantity: 1 });
+        }
 
         updateCart();
 
@@ -71,99 +72,105 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
 
+    // Update cart UI
     function updateCart() {
-        cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
-        cartItems.innerHTML = cart.length === 0 ? '<div class="empty-cart">Your cart is empty</div>' : '';
+        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        cartCount.textContent = totalItems;
 
-        cart.forEach(item => {
-            const cartItem = document.createElement('div');
-            cartItem.className = 'cart-item';
-            cartItem.innerHTML = `
-                <img src="${item.image}" alt="${item.name}" class="cart-item-image">
-                <div class="cart-item-details">
-                    <h4 class="cart-item-title">${item.name}</h4>
-                    <p class="cart-item-price">₦${item.price.toLocaleString()}</p>
-                    <div class="quantity-control">
-                        <button class="quantity-btn decrease" data-id="${item.id}">-</button>
-                        <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn increase" data-id="${item.id}">+</button>
+        if (cart.length === 0) {
+            cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+        } else {
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+                    <div class="cart-item-details">
+                        <h4 class="cart-item-title">${item.name}</h4>
+                        <p class="cart-item-price">₦${item.price.toLocaleString()}</p>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrease" data-id="${item.id}">-</button>
+                            <span class="quantity">${item.quantity}</span>
+                            <button class="quantity-btn increase" data-id="${item.id}">+</button>
+                        </div>
                     </div>
-                </div>
-                <button class="cart-item-remove" data-id="${item.id}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            `;
-            cartItems.appendChild(cartItem);
-        });
+                    <button class="cart-item-remove" data-id="${item.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                cartItems.appendChild(cartItem);
+            });
 
-        document.querySelectorAll('.decrease').forEach(btn => btn.addEventListener('click', decreaseQuantity));
-        document.querySelectorAll('.increase').forEach(btn => btn.addEventListener('click', increaseQuantity));
-        document.querySelectorAll('.cart-item-remove').forEach(btn => btn.addEventListener('click', removeFromCart));
+            // Quantity buttons
+            document.querySelectorAll('.decrease').forEach(btn => btn.addEventListener('click', decreaseQuantity));
+            document.querySelectorAll('.increase').forEach(btn => btn.addEventListener('click', increaseQuantity));
+            document.querySelectorAll('.cart-item-remove').forEach(btn => btn.addEventListener('click', removeFromCart));
+        }
 
-        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        cartTotal.textContent = `Total: ₦${total.toLocaleString()}`;
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        cartTotal.textContent = `Total:  ₦${total.toLocaleString()}`;
     }
 
     function decreaseQuantity(e) {
-        const id = parseInt(e.target.dataset.id);
-        const item = cart.find(i => i.id === id);
+        const productId = parseInt(e.target.getAttribute('data-id'));
+        const item = cart.find(i => i.id === productId);
         if (item.quantity > 1) item.quantity -= 1;
-        else cart = cart.filter(i => i.id !== id);
+        else cart = cart.filter(i => i.id !== productId);
         updateCart();
     }
 
     function increaseQuantity(e) {
-        const id = parseInt(e.target.dataset.id);
-        const item = cart.find(i => i.id === id);
+        const productId = parseInt(e.target.getAttribute('data-id'));
+        const item = cart.find(i => i.id === productId);
         item.quantity += 1;
         updateCart();
     }
 
     function removeFromCart(e) {
-        const id = parseInt(e.target.dataset.id);
-        cart = cart.filter(i => i.id !== id);
+        const productId = parseInt(e.target.closest('button').getAttribute('data-id'));
+        cart = cart.filter(i => i.id !== productId);
         updateCart();
     }
 
-    // ---------- CHECKOUT ----------
+    // Checkout
     async function checkout() {
-        if (cart.length === 0) return alert('Your cart is empty!');
+    if (cart.length === 0) return alert('Your cart is empty!');
+    const email = prompt('Enter your email for order confirmation:');
+    if (!email) return alert('Email is required.');
 
-        const email = prompt('Enter your email for payment confirmation:');
-        if (!email) return alert('Email is required!');
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/checkout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cart, totalAmount, email })
+        });
+        const data = await res.json();
 
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/checkout`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cart, totalAmount, email })
-            });
-            const data = await res.json();
-
-            if (data.status === 'success') {
-                window.open(data.paymentUrl, '_blank');
-                cart = []; 
-                updateCart();
-
-                paymentSuccessOverlay.style.display = 'flex';
-            } else {
-                alert('Payment initialization failed.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Checkout failed. Try again.');
+        if (data.status === 'success') {
+            alert('Order created! Redirecting to Paystack for payment...');
+            cart = []; // clear cart immediately
+            updateCart();
+            // Redirect user to Paystack
+            window.location.href = `${data.paymentUrl}&redirect_url=${BACKEND_URL}/payment-status.html?reference=${data.reference}`;
+        } else {
+            alert('Error initializing payment: ' + data.message);
         }
+    } catch (err) {
+        console.error(err);
+        alert('Server error, please try again.');
     }
+}
 
-    // ---------- EVENT LISTENERS ----------
+    // Event listeners
     cartIcon.addEventListener('click', () => cartOverlay.classList.add('active'));
     closeCart.addEventListener('click', () => cartOverlay.classList.remove('active'));
-    checkoutBtn.addEventListener('click', checkout);
-    closeSuccessBtn.addEventListener('click', () => paymentSuccessOverlay.style.display = 'none');
     cartOverlay.addEventListener('click', (e) => { if (e.target === cartOverlay) cartOverlay.classList.remove('active'); });
+    checkoutBtn.addEventListener('click', checkout);
 
+    // Initialize
     renderProducts();
     updateCart();
 });
