@@ -10,7 +10,7 @@ const app = express();
 
 // ---------- CONFIGURATION ----------
 const FRONTEND_URLS = [
-    process.env.FRONTEND_URL || 'https://your-frontend-domain.vercel.app' // Replace with your frontend URL
+    process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app' // Replace with your frontend URL
 ];
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
