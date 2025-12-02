@@ -3,6 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -10,20 +11,28 @@ const app = express();
 
 // ---------- CONFIGURATION ----------
 const FRONTEND_URLS = [
-    process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app' // Replace with your frontend URL
+    process.env.FRONTEND_URL || 'https://naijamarket-three.vercel.app/'
 ];
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY;
 
-// Nodemailer setup
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
+// ---------- MONGODB CONNECTION ----------
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+// Order schema
+const orderSchema = new mongoose.Schema({
+    email: String,
+    cart: Array,
+    totalAmount: Number,
+    reference: String,
+    paid: Boolean,
+    date: { type: Date, default: Date.now }
 });
+
+const Order = mongoose.model('Order', orderSchema);
 
 // ---------- MIDDLEWARE ----------
 app.use(cors({
@@ -40,7 +49,6 @@ app.get("/", (req, res) => {
 // Initialize payment
 app.post('/api/checkout', async (req, res) => {
     const { cart, totalAmount, email } = req.body;
-
     if (!cart || !totalAmount || !email) return res.status(400).json({ status: 'error', message: 'Missing data' });
 
     try {
@@ -78,7 +86,7 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
-// Verify payment & send email
+// Verify payment
 app.get('/api/verify-payment', async (req, res) => {
     const reference = req.query.reference;
     if (!reference) return res.send('Payment reference missing');
@@ -96,26 +104,55 @@ app.get('/api/verify-payment', async (req, res) => {
 
         if (data.status && data.data.status === 'success') {
             const email = data.data.customer.email;
-            const amount = (data.data.amount / 100).toLocaleString();
+            const amount = data.data.amount / 100;
             const items = JSON.parse(data.data.metadata.cart);
 
+            // Save order in MongoDB
+            await Order.create({
+                email,
+                cart: items,
+                totalAmount: amount,
+                reference,
+                paid: true
+            });
+
             // Send confirmation email
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
                 to: email,
                 subject: 'Order Confirmed - Naija Market',
                 html: `<h3>Thank you for your order!</h3>
                        <p>Items: ${items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
-                       <p>Total Paid: ₦${amount}</p>`
+                       <p>Total Paid: ₦${amount.toLocaleString()}</p>`
             });
 
-            res.send('Payment verified and email sent.');
+            res.send('Payment verified, order saved, and email sent.');
         } else {
             res.send('Payment verification failed.');
         }
+
     } catch (err) {
         console.error(err);
         res.send('Error verifying payment.');
+    }
+});
+
+// Get all orders (admin route, protect this in production)
+app.get('/api/orders', async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ date: -1 });
+        res.json(orders);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Error fetching orders' });
     }
 });
 
