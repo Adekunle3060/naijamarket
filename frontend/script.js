@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // ---------- CONFIG ----------
-    const BACKEND_URL = 'https://your-backend-service.onrender.com'; // Replace with your Render backend URL
+    const BACKEND_URL = 'https://naijamarket-gtv0.onrender.com'; // Replace with your Render backend URL
 
     const products = [
         { id: 1, name: "Adire Fabric", description: "Traditional Yoruba tie-dye fabric, perfect for making unique clothing.", price: 4500, image: "https://img001.prntscr.com/file/img001/M9zSmJz-RQKMODRAYvke-g.jpg" },
