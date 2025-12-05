@@ -6,117 +6,80 @@
     <title>Naija Market - Admin Dashboard</title>
 
     <style>
-        :root {
-            --primary-color: #008753;
-            --secondary-color: #1EB53A;
-            --accent-color: #FCD116;
-            --danger-color: #cc0000;
-            --success-color: #009e0f;
-            --dark-color: #0C0C0C;
-            --light-color: #F9F9F9;
-        }
+       /* Orders Table */
+.table-wrapper {
+    margin-top: 25px;
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    padding: 10px;
+}
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--light-color);
-            color: var(--dark-color);
-        }
+table {
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0 10px; /* Adds row spacing */
+}
 
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem 2rem;
-            text-align: center;
-            font-size: 1.6rem;
-            font-weight: bold;
-        }
+th {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 16px;
+    font-weight: 600;
+    text-align: left;
+}
 
-        main {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 1rem;
-        }
+td {
+    background: #ffffff;
+    padding: 16px;
+    font-size: 15px;
+    border-bottom: none;
+}
 
-        /* Login Section */
-        #login-section {
-            text-align: center;
-            margin-top: 60px;
-        }
+tr {
+    border-radius: 10px;
+}
 
-        #login-section input {
-            padding: 0.7rem;
-            width: 240px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            margin-right: 10px;
-        }
+tr td:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
 
-        #login-section button {
-            padding: 0.7rem 1.3rem;
-            border: none;
-            border-radius: 5px;
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
+tr td:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
 
-        #login-section button:hover {
-            background-color: var(--secondary-color);
-        }
+tr:hover td {
+    background: #f0fdf4; /* Very light green hover */
+}
 
-        /* Orders Table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 25px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
+.status-paid {
+    background: #d9fdd3;
+    color: #0a8a00;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
 
-        th, td {
-            padding: 14px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
+.status-unpaid {
+    background: #ffe1e1;
+    color: #c30000;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
 
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-        }
+@media (max-width: 768px) {
+    td, th {
+        padding: 12px;
+        font-size: 14px;
+    }
+}
 
-        tr:hover {
-            background: #f4f4f4;
-        }
-
-        .status-paid {
-            color: var(--success-color);
-            font-weight: bold;
-        }
-
-        .status-unpaid {
-            color: var(--danger-color);
-            font-weight: bold;
-        }
-
-        @media(max-width: 768px) {
-            table {
-                font-size: 14px;
-            }
-
-            th, td {
-                padding: 10px;
-            }
-
-            #login-section input {
-                width: 180px;
-                margin-bottom: 10px;
-            }
-        }
     </style>
 </head>
 <body>

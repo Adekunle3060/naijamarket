@@ -47,9 +47,11 @@ app.get("/", (req, res) => {
 });
 
 // Initialize payment
+// Initialize payment
 app.post('/api/checkout', async (req, res) => {
     const { cart, totalAmount, email } = req.body;
-    if (!cart || !totalAmount || !email) return res.status(400).json({ status: 'error', message: 'Missing data' });
+    if (!cart || !totalAmount || !email)
+        return res.status(400).json({ status: 'error', message: 'Missing data' });
 
     try {
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -59,11 +61,10 @@ app.post('/api/checkout', async (req, res) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                email: email,
+                email,
                 amount: totalAmount * 100,
                 currency: 'NGN',
-                metadata: { cart: JSON.stringify(cart) }
-                // callback_url removed for inline payment
+                metadata: { cart }    // <-- FIXED
             })
         });
 
@@ -87,6 +88,7 @@ app.post('/api/checkout', async (req, res) => {
 });
 
 // Verify payment
+// Verify payment
 app.get('/api/verify-payment', async (req, res) => {
     const reference = req.query.reference;
     if (!reference) return res.send('Payment reference missing');
@@ -105,9 +107,11 @@ app.get('/api/verify-payment', async (req, res) => {
         if (data.status && data.data.status === 'success') {
             const email = data.data.customer.email;
             const amount = data.data.amount / 100;
-            const items = JSON.parse(data.data.metadata.cart);
 
-            // Save order in MongoDB
+            // FIX: Do not parse - Paystack already returns JS object
+            const items = data.data.metadata.cart;
+
+            // Save order
             await Order.create({
                 email,
                 cart: items,
@@ -129,9 +133,14 @@ app.get('/api/verify-payment', async (req, res) => {
                 from: process.env.EMAIL_USER,
                 to: email,
                 subject: 'Order Confirmed - Naija Market',
-                html: `<h3>Thank you for your order!</h3>
-                       <p>Items: ${items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
-                       <p>Total Paid: ₦${amount.toLocaleString()}</p>`
+                html: `
+                    <h3>Thank you for your order!</h3>
+                    <p>Items:</p>
+                    <ul>
+                        ${items.map(i => `<li>${i.name} x ${i.quantity}</li>`).join("")}
+                    </ul>
+                    <p>Total Paid: ₦${amount.toLocaleString()}</p>
+                `
             });
 
             res.send('Payment verified, order saved, and email sent.');
@@ -144,6 +153,7 @@ app.get('/api/verify-payment', async (req, res) => {
         res.send('Error verifying payment.');
     }
 });
+
 
 // Get all orders (admin route)
 app.get('/api/orders', async (req, res) => {
