@@ -33,9 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const checkoutForm = document.getElementById('checkout-form');
     const closeCheckout = document.getElementById('close-checkout');
 
-    /* =====================================================
-          SAFE FETCH WRAPPER
-    ===================================================== */
     async function safeFetch(url, options = {}, timeout = 10000) {
         return Promise.race([
             fetch(url, options),
@@ -45,23 +42,13 @@ document.addEventListener('DOMContentLoaded', function () {
         ]);
     }
 
-    /* =====================================================
-          SMALL UI HELPER
-    ===================================================== */
-    function notify(msg) {
-        alert(msg);
-    }
+    function notify(msg) { alert(msg); }
 
-    /* =====================================================
-          RENDER PRODUCTS
-    ===================================================== */
     function renderProducts() {
         productsContainer.innerHTML = '';
-
         products.forEach(p => {
             const card = document.createElement('div');
             card.className = 'product-card';
-
             card.innerHTML = `
                 <img src="${p.image}" class="product-image">
                 <div class="product-info">
@@ -73,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
             `;
-
             productsContainer.appendChild(card);
         });
 
@@ -81,18 +67,12 @@ document.addEventListener('DOMContentLoaded', function () {
             .forEach(btn => btn.addEventListener('click', addToCart));
     }
 
-    /* =====================================================
-          CART FUNCTIONS
-    ===================================================== */
     function addToCart(e) {
         const id = parseInt(e.target.dataset.id);
         const product = products.find(p => p.id === id);
         const exists = cart.find(i => i.id === id);
-
         exists ? exists.quantity++ : cart.push({ ...product, quantity: 1 });
-
         updateCart();
-
         e.target.textContent = "Added!";
         e.target.style.backgroundColor = "#333";
         setTimeout(() => {
@@ -103,89 +83,65 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateCart() {
         cartCount.textContent = cart.reduce((t, i) => t + i.quantity, 0);
-
         if (cart.length === 0) {
             cartItems.innerHTML = `<div class="empty-cart">Your cart is empty</div>`;
         } else {
             cartItems.innerHTML = '';
-
             cart.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'cart-item';
-
                 div.innerHTML = `
                     <img src="${item.image}" class="cart-item-image">
                     <div class="cart-item-details">
                         <h4>${item.name}</h4>
                         <p>₦${item.price.toLocaleString()}</p>
-
                         <div class="quantity-control">
                             <button class="quantity-btn decrease" data-id="${item.id}">-</button>
                             <span class="quantity">${item.quantity}</span>
                             <button class="quantity-btn increase" data-id="${item.id}">+</button>
                         </div>
                     </div>
-
-                    <button class="cart-item-remove" data-id="${item.id}">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <button class="cart-item-remove" data-id="${item.id}"><i class="fas fa-trash"></i></button>
                 `;
-
                 cartItems.appendChild(div);
             });
 
-            document.querySelectorAll('.increase').forEach(b => {
-                b.addEventListener('click', () => {
-                    const id = parseInt(b.dataset.id);
-                    cart.find(i => i.id === id).quantity++;
-                    updateCart();
-                });
-            });
+            document.querySelectorAll('.increase').forEach(b => b.addEventListener('click', () => {
+                const id = parseInt(b.dataset.id);
+                cart.find(i => i.id === id).quantity++;
+                updateCart();
+            }));
 
-            document.querySelectorAll('.decrease').forEach(b => {
-                b.addEventListener('click', () => {
-                    const id = parseInt(b.dataset.id);
-                    const item = cart.find(i => i.id === id);
+            document.querySelectorAll('.decrease').forEach(b => b.addEventListener('click', () => {
+                const id = parseInt(b.dataset.id);
+                const item = cart.find(i => i.id === id);
+                item.quantity > 1 ? item.quantity-- : cart = cart.filter(i => i.id !== id);
+                updateCart();
+            }));
 
-                    item.quantity > 1
-                        ? item.quantity--
-                        : cart = cart.filter(i => i.id !== id);
-
-                    updateCart();
-                });
-            });
-
-            document.querySelectorAll('.cart-item-remove').forEach(b => {
-                b.addEventListener('click', () => {
-                    const id = parseInt(b.dataset.id);
-                    cart = cart.filter(i => i.id !== id);
-                    updateCart();
-                });
-            });
+            document.querySelectorAll('.cart-item-remove').forEach(b => b.addEventListener('click', () => {
+                const id = parseInt(b.dataset.id);
+                cart = cart.filter(i => i.id !== id);
+                updateCart();
+            }));
         }
 
         const total = cart.reduce((t, i) => t + i.price * i.quantity, 0);
         cartTotal.textContent = `Total: ₦${total.toLocaleString()}`;
     }
 
-    /* =====================================================
-          OPEN CHECKOUT FORM
-    ===================================================== */
     checkoutBtn.addEventListener("click", () => {
         if (!cart.length) return notify("Your cart is empty.");
         checkoutModal.classList.add("active");
     });
 
-    closeCheckout.addEventListener("click", () => {
-        checkoutModal.classList.remove("active");
-    });
+    closeCheckout.addEventListener("click", () => checkoutModal.classList.remove("active"));
 
-    /* =====================================================
-          UPDATED CHECKOUT (MATCHES BACKEND)
-    ===================================================== */
+    // =====================================================
+    // UPDATED CHECKOUT WITH BACKEND VERIFICATION
+    // =====================================================
     checkoutForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-
         const customer = {
             firstName: document.getElementById("firstName").value.trim(),
             lastName: document.getElementById("lastName").value.trim(),
@@ -193,68 +149,54 @@ document.addEventListener('DOMContentLoaded', function () {
             phone: document.getElementById("phone").value.trim(),
             address: document.getElementById("address").value.trim()
         };
-
         const totalAmount = cart.reduce((t, i) => t + i.price * i.quantity, 0);
 
         try {
-            const res = await safeFetch(`${BACKEND_URL}/api/checkout`, {
+            // Initialize payment
+            const initRes = await safeFetch(`${BACKEND_URL}/api/checkout`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    cart,
-                    totalAmount,
-                    email: customer.email,
-                    customer
-                })
+                body: JSON.stringify({ cart, totalAmount, email: customer.email, customer })
             });
-
-            const data = await res.json();
-            console.log("Checkout response:", data);
-
-            if (data.status !== "success") {
-                return notify("Failed to initialize payment.");
-            }
-
+            const initData = await initRes.json();
+            if (initData.status !== "success") return notify("Failed to initialize payment.");
             checkoutModal.classList.remove("active");
 
             const handler = PaystackPop.setup({
-                key: data.publicKey,
+                key: initData.publicKey,
                 email: customer.email,
                 amount: totalAmount * 100,
-                ref: data.reference,
-
+                ref: initData.reference,
                 onClose: () => notify("Payment canceled."),
-
-                callback: () => {
-                    notify("Payment completed!");
-                    cart = [];
-                    updateCart();
+                callback: async function (response) {
+                    notify("Payment completed! Verifying...");
+                    try {
+                        const verifyRes = await fetch(`${BACKEND_URL}/api/verify-payment?reference=${response.reference}`);
+                        const verifyData = await verifyRes.json();
+                        if (verifyData.status === "success") {
+                            notify("Payment verified and order saved!");
+                            cart = [];
+                            updateCart();
+                        } else {
+                            notify("Payment verification failed.");
+                        }
+                    } catch (err) {
+                        console.error("Verification failed:", err);
+                        notify("Payment verification failed. Contact support.");
+                    }
                 }
             });
-
             handler.openIframe();
-
         } catch (err) {
-            console.error(err);
-            notify("Something went wrong.");
+            console.error("Checkout error:", err);
+            notify("Something went wrong. Please try again.");
         }
     });
 
-    /* =====================================================
-          EVENT LISTENERS
-    ===================================================== */
     cartIcon.addEventListener('click', () => cartOverlay.classList.add('active'));
-    closeCart.addEventListener('click', () =>
-        cartOverlay.classList.remove('active')
-    );
+    closeCart.addEventListener('click', () => cartOverlay.classList.remove('active'));
+    cartOverlay.addEventListener('click', (e) => { if (e.target === cartOverlay) cartOverlay.classList.remove('active'); });
 
-    cartOverlay.addEventListener('click', (e) => {
-        if (e.target === cartOverlay) cartOverlay.classList.remove('active');
-    });
-
-    /* =====================================================
-          INITIALIZE PAGE
-    ===================================================== */
     renderProducts();
     updateCart();
 });

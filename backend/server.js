@@ -60,7 +60,6 @@ app.get("/", (req, res) => {
 // ---------------------------------------
 app.post("/api/checkout", async (req, res) => {
   const { cart, totalAmount, customer, email } = req.body;
-
   const userEmail = email || customer?.email;
 
   if (!cart || !totalAmount || !userEmail) {
@@ -81,10 +80,7 @@ app.post("/api/checkout", async (req, res) => {
         email: userEmail,
         amount: totalAmount * 100,
         currency: "NGN",
-        metadata: {
-          cart,
-          customer
-        }
+        metadata: { cart, customer }
       })
     });
 
@@ -98,10 +94,7 @@ app.post("/api/checkout", async (req, res) => {
       });
     } else {
       console.error("Paystack Init Error:", data);
-      return res.json({
-        status: "error",
-        message: "Failed to initialize payment"
-      });
+      return res.json({ status: "error", message: "Failed to initialize payment" });
     }
   } catch (err) {
     console.error("Server error during checkout:", err);
@@ -114,8 +107,7 @@ app.post("/api/checkout", async (req, res) => {
 // ---------------------------------------
 app.get("/api/verify-payment", async (req, res) => {
   const reference = req.query.reference;
-
-  if (!reference) return res.send("Payment reference missing");
+  if (!reference) return res.status(400).json({ status: "error", message: "Payment reference missing" });
 
   try {
     const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
@@ -149,10 +141,7 @@ app.get("/api/verify-payment", async (req, res) => {
       // Send confirmation email
       const transporter = nodemailer.createTransport({
         service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
       });
 
       await transporter.sendMail({
@@ -163,22 +152,20 @@ app.get("/api/verify-payment", async (req, res) => {
           <h3>Thank you for your order!</h3>
           <p>Customer: ${customer.firstName} ${customer.lastName}</p>
           <p>Items:</p>
-          <ul>
-            ${items.map(i => `<li>${i.name} x ${i.quantity}</li>`).join("")}
-          </ul>
+          <ul>${items.map(i => `<li>${i.name} x ${i.quantity}</li>`).join("")}</ul>
           <p>Total Paid: ₦${amount.toLocaleString()}</p>
           <p>Delivery Address: ${customer.address}</p>
         `
       });
 
-      return res.send("Payment verified and order saved.");
+      return res.json({ status: "success", message: "Payment verified and order saved" });
     } else {
       console.error("Payment verification failed:", data);
-      return res.send("Payment verification failed.");
+      return res.status(400).json({ status: "error", message: "Payment verification failed" });
     }
   } catch (err) {
     console.error("Error verifying payment:", err);
-    return res.send("Error verifying payment.");
+    return res.status(500).json({ status: "error", message: "Error verifying payment" });
   }
 });
 
