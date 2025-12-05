@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
           VARIABLES & ELEMENTS
     ===================================================== */
     let cart = [];
-    let lastPaymentReference = null;
     const BACKEND_URL = "https://naijamarket-gtv0.onrender.com";
 
     const productsContainer = document.getElementById('products-container');
@@ -29,10 +28,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const cartItems = document.getElementById('cart-items');
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
-    const verifyPaymentBtn = document.getElementById('check-status-btn');
 
     /* =====================================================
-          SAFE FETCH WRAPPER (prevents silent fails)
+          SAFE FETCH WRAPPER
     ===================================================== */
     async function safeFetch(url, options = {}, timeout = 10000) {
         return Promise.race([
@@ -91,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         updateCart();
 
-        // Button animation
         e.target.textContent = "Added!";
         e.target.style.backgroundColor = "#333";
         setTimeout(() => {
@@ -198,9 +195,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 onClose: () => notify("Payment popup closed."),
 
-                callback: (response) => {
-                    lastPaymentReference = response.reference;
-                    notify("Payment complete! Click *Check Payment Status*.");
+                callback: () => {
+                    notify("Payment completed! Thank you.");
                     cart = [];
                     updateCart();
                 }
@@ -215,37 +211,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* =====================================================
-          VERIFY PAYMENT (Improved logic!)
-    ===================================================== */
-    async function verifyPayment() {
-        if (!lastPaymentReference) {
-            return notify("No saved payment reference.");
-        }
-
-        try {
-            const res = await safeFetch(`${BACKEND_URL}/api/verify-payment/${encodeURIComponent(lastPaymentReference)}`);
-            const data = await res.json();
-
-            const verified =
-                data.verified === true ||
-                data.payment_status === "success" ||
-                (data.status === "success" && data.data?.status === "success") ||
-                data.data?.gateway_response === "Successful";
-
-            if (verified) {
-                notify("PAYMENT VERIFIED SUCCESSFULLY 🎉");
-                lastPaymentReference = null;
-            } else {
-                notify("Payment not yet verified, try again.");
-            }
-
-        } catch (err) {
-            console.error(err);
-            notify("Unable to verify payment at this time.");
-        }
-    }
-
-    /* =====================================================
           EVENT LISTENERS
     ===================================================== */
     cartIcon.addEventListener('click', () => cartOverlay.classList.add('active'));
@@ -253,7 +218,6 @@ document.addEventListener('DOMContentLoaded', function () {
     cartOverlay.addEventListener('click', (e) => { if (e.target === cartOverlay) cartOverlay.classList.remove('active'); });
 
     checkoutBtn.addEventListener('click', checkout);
-    verifyPaymentBtn.addEventListener('click', verifyPayment);
 
     /* =====================================================
           INITIALIZE PAGE
