@@ -29,10 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
 
-    /* Checkout Modal */
-    const checkoutModal = document.getElementById("checkout-modal");
-    const checkoutForm = document.getElementById("checkout-form");
-    const closeCheckout = document.getElementById("close-checkout");
+    const checkoutModal = document.getElementById('checkout-modal');
+    const checkoutForm = document.getElementById('checkout-form');
+    const closeCheckout = document.getElementById('close-checkout');
 
     /* =====================================================
           SAFE FETCH WRAPPER
@@ -47,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* =====================================================
-          HELPER
+          SMALL UI HELPER
     ===================================================== */
     function notify(msg) {
         alert(msg);
@@ -170,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* =====================================================
-          CHECKOUT MODAL LOGIC
+          OPEN CHECKOUT FORM
     ===================================================== */
     checkoutBtn.addEventListener("click", () => {
         if (!cart.length) return notify("Your cart is empty.");
@@ -182,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     /* =====================================================
-          UPDATED CHECKOUT → BACKEND → PAYSTACK
+          UPDATED CHECKOUT (MATCHES BACKEND)
     ===================================================== */
     checkoutForm.addEventListener("submit", async function (e) {
         e.preventDefault();
@@ -201,10 +200,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const res = await safeFetch(`${BACKEND_URL}/api/checkout`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ cart, totalAmount, customer })
+                body: JSON.stringify({
+                    cart,
+                    totalAmount,
+                    email: customer.email,
+                    customer
+                })
             });
 
             const data = await res.json();
+            console.log("Checkout response:", data);
+
             if (data.status !== "success") {
                 return notify("Failed to initialize payment.");
             }
@@ -219,8 +225,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 onClose: () => notify("Payment canceled."),
 
-                callback: function (response) {
-                    notify("Payment Successful! Ref: " + response.reference);
+                callback: () => {
+                    notify("Payment completed!");
                     cart = [];
                     updateCart();
                 }
@@ -230,16 +236,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (err) {
             console.error(err);
-            notify("Could not start payment.");
+            notify("Something went wrong.");
         }
     });
 
     /* =====================================================
-          GENERAL EVENT LISTENERS
+          EVENT LISTENERS
     ===================================================== */
     cartIcon.addEventListener('click', () => cartOverlay.classList.add('active'));
-    closeCart.addEventListener('click', () => cartOverlay.classList.remove('active'));
-    cartOverlay.addEventListener('click', (e) => { if (e.target === cartOverlay) cartOverlay.classList.remove('active'); });
+    closeCart.addEventListener('click', () =>
+        cartOverlay.classList.remove('active')
+    );
+
+    cartOverlay.addEventListener('click', (e) => {
+        if (e.target === cartOverlay) cartOverlay.classList.remove('active');
+    });
 
     /* =====================================================
           INITIALIZE PAGE

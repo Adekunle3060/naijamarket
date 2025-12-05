@@ -30,10 +30,11 @@ mongoose
 // Order Schema
 const orderSchema = new mongoose.Schema({
     email: String,
+    customer: Object, // Store all customer details
     cart: Array,
     totalAmount: Number,
     reference: String,
-    paid: Boolean, // <--- IMPORTANT (used by admin panel)
+    paid: Boolean,
     date: { type: Date, default: Date.now }
 });
 
@@ -59,15 +60,19 @@ app.get("/", (req, res) => {
 });
 
 // ---------------------------------------
-// INITIATE PAYMENT
+// INITIATE PAYMENT (UPDATED)
 // ---------------------------------------
 app.post("/api/checkout", async (req, res) => {
-    const { cart, totalAmount, email } = req.body;
+    const { cart, totalAmount, customer, email } = req.body;
 
-    if (!cart || !totalAmount || !email)
+    // Allow email from either field
+    const userEmail = email || customer?.email;
+
+    if (!cart || !totalAmount || !userEmail) {
         return res
             .status(400)
-            .json({ status: "error", message: "Missing data" });
+            .json({ status: "error", message: "Missing required fields" });
+    }
 
     try {
         const response = await fetch(
@@ -79,10 +84,13 @@ app.post("/api/checkout", async (req, res) => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    email,
+                    email: userEmail,
                     amount: totalAmount * 100,
                     currency: "NGN",
-                    metadata: { cart }
+                    metadata: {
+                        cart,
+                        customer
+                    }
                 })
             }
         );
@@ -90,21 +98,20 @@ app.post("/api/checkout", async (req, res) => {
         const data = await response.json();
 
         if (data.status) {
-            res.json({
+            return res.json({
                 status: "success",
-                paymentUrl: data.data.authorization_url,
                 publicKey: PAYSTACK_PUBLIC_KEY,
                 reference: data.data.reference
             });
         } else {
-            res.json({
+            return res.json({
                 status: "error",
                 message: "Failed to initialize payment"
             });
         }
     } catch (err) {
         console.error(err);
-        res.status(500).json({ status: "error", message: "Server error" });
+        return res.status(500).json({ status: "error", message: "Server error" });
     }
 });
 
@@ -117,7 +124,7 @@ app.get("/api/verify-payment", async (req, res) => {
 
     try {
         const response = await fetch(
-            `https://api.paystack.co/transaction/verify/${reference}`,
+            `https://api.paystack.co/transaction/verify/${reference}`, 
             {
                 method: "GET",
                 headers: {
@@ -133,92 +140,24 @@ app.get("/api/verify-payment", async (req, res) => {
             const email = data.data.customer.email;
             const amount = data.data.amount / 100;
             const items = data.data.metadata.cart;
+            const customer = data.data.metadata.customer;
 
-            // Save order
             await Order.create({
                 email,
+                customer,
                 cart: items,
                 totalAmount: amount,
                 reference,
                 paid: true
             });
 
-            // Send confirmation email
-            const transporter = nodemailer.createTransport({
-                service: "gmail",
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
-
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: "Order Confirmed - Naija Market",
-                html: `
-                    <h3>Thank you for your order!</h3>
-                    <p>Items:</p>
-                    <ul>
-                        ${items
-                            .map(i => `<li>${i.name} x ${i.quantity}</li>`)
-                            .join("")}
-                    </ul>
-                    <p>Total Paid: ₦${amount.toLocaleString()}</p>
-                `
-            });
-
-            res.send("Payment verified, order saved, and email sent.");
+            res.send("Payment verified and order saved.");
         } else {
             res.send("Payment verification failed.");
         }
     } catch (err) {
         console.error(err);
         res.send("Error verifying payment.");
-    }
-});
-
-// ---------------------------------------
-// ADMIN LOGIN
-// ---------------------------------------
-app.post("/admin/login", (req, res) => {
-    const { password } = req.body;
-
-    if (password === process.env.ADMIN_PASSWORD) {
-        return res.json({ success: true });
-    }
-
-    return res.json({ success: false });
-});
-
-// ---------------------------------------
-// ADMIN - GET ALL ORDERS
-// ---------------------------------------
-app.get("/admin/orders", async (req, res) => {
-    try {
-        const orders = await Order.find().sort({ date: -1 });
-        res.json(orders);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error fetching orders." });
-    }
-});
-
-// ---------------------------------------
-// ADMIN - UPDATE PAYMENT STATUS
-// ---------------------------------------
-app.put("/admin/update-payment", async (req, res) => {
-    try {
-        const { id, paymentStatus } = req.body;
-
-        await Order.findByIdAndUpdate(id, {
-            paid: paymentStatus === "paid"
-        });
-
-        res.json({ success: true });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ success: false });
     }
 });
 
