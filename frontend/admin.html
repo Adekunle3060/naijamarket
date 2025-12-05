@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Naija Market - Admin Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --primary-color: #008753;
             --secondary-color: #1EB53A;
             --accent-color: #FCD116;
+            --danger-color: #cc0000;
+            --success-color: #009e0f;
             --dark-color: #0C0C0C;
             --light-color: #F9F9F9;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--light-color);
@@ -27,98 +29,115 @@
             color: white;
             padding: 1rem 2rem;
             text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         main {
             max-width: 1200px;
             margin: 2rem auto;
-            padding: 0 1rem;
+            padding: 1rem;
         }
 
+        /* Login Section */
         #login-section {
             text-align: center;
-            margin-top: 50px;
+            margin-top: 60px;
         }
 
         #login-section input {
-            padding: 0.5rem;
-            width: 250px;
-            margin-right: 10px;
-            border-radius: 4px;
+            padding: 0.7rem;
+            width: 240px;
+            border-radius: 5px;
             border: 1px solid #ccc;
+            margin-right: 10px;
         }
 
         #login-section button {
-            padding: 0.5rem 1rem;
+            padding: 0.7rem 1.3rem;
+            border: none;
+            border-radius: 5px;
             background-color: var(--primary-color);
             color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
             font-weight: bold;
+            cursor: pointer;
         }
 
         #login-section button:hover {
             background-color: var(--secondary-color);
         }
 
-        #orders-section {
-            display: none;
-        }
-
-        #orders-container {
-            margin-top: 20px;
-        }
-
-        .order-card {
-            background-color: white;
-            padding: 15px;
-            margin-bottom: 15px;
+        /* Orders Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
 
-        .order-card p {
-            margin: 5px 0;
+        th, td {
+            padding: 14px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
         }
 
-        @media(max-width:768px){
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f4f4f4;
+        }
+
+        .status-paid {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .status-unpaid {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        @media(max-width: 768px) {
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
             #login-section input {
                 width: 180px;
                 margin-bottom: 10px;
-            }
-
-            #login-section button {
-                width: 120px;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        Naija Market Admin Dashboard
-    </header>
 
-    <main>
-        <!-- Login Section -->
-        <div id="login-section">
-            <h2>Admin Login</h2>
-            <input type="password" id="admin-password" placeholder="Enter admin password">
-            <button id="login-btn">Login</button>
-        </div>
+<header>Naija Market Admin Dashboard</header>
 
-        <!-- Orders Section -->
-        <div id="orders-section">
-            <h2>Live Orders</h2>
-            <div id="orders-container">
-                <p>Loading orders...</p>
-            </div>
-        </div>
-    </main>
+<main>
+    <!-- Login -->
+    <div id="login-section">
+        <h2>Admin Login</h2>
+        <input type="password" id="admin-password" placeholder="Enter admin password">
+        <button id="login-btn">Login</button>
+    </div>
 
-    <script src="admin.js"></script>
+    <!-- Orders -->
+    <div id="orders-section" style="display:none;">
+        <h2>Live Orders</h2>
+        <div id="orders-container"></div>
+    </div>
+</main>
+
+<script src="admin.js"></script>
 </body>
 </html>
