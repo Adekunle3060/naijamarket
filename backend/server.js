@@ -9,64 +9,55 @@ dotenv.config();
 
 const app = express();
 
-// ---------------------------------------
-// CONFIGURATION
-// ---------------------------------------
-const FRONTEND_URLS = [
-  process.env.FRONTEND_URL || "https://naijamarket-three.vercel.app"
-];
-
+// ----------------------------
+// CONFIG
+// ----------------------------
+const FRONTEND_URLS = [process.env.FRONTEND_URL || "https://naijamarket-three.vercel.app"];
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY;
 
-// ---------------------------------------
-// MONGODB CONNECTION
-// ---------------------------------------
+// ----------------------------
+// MONGODB
+// ----------------------------
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("MongoDB connection error:", err));
 
-// ---------------------------------------
+// ----------------------------
 // ORDER SCHEMA
-// ---------------------------------------
+// ----------------------------
 const orderSchema = new mongoose.Schema({
   email: String,
-  customer: Object, // full customer details
+  customer: Object,
   cart: Array,
   totalAmount: Number,
   reference: String,
   paid: Boolean,
   date: { type: Date, default: Date.now }
 });
-
 const Order = mongoose.model("Order", orderSchema);
 
-// ---------------------------------------
+// ----------------------------
 // MIDDLEWARE
-// ---------------------------------------
+// ----------------------------
 app.use(cors({ origin: FRONTEND_URLS, methods: ["GET", "POST", "PUT"] }));
 app.use(bodyParser.json());
 
-// ---------------------------------------
-// ROOT ROUTE
-// ---------------------------------------
-app.get("/", (req, res) => {
-  res.send("Backend is running...");
-});
+// ----------------------------
+// ROOT
+// ----------------------------
+app.get("/", (req, res) => res.send("Backend running..."));
 
-// ---------------------------------------
+// ----------------------------
 // INITIATE PAYMENT
-// ---------------------------------------
+// ----------------------------
 app.post("/api/checkout", async (req, res) => {
   const { cart, totalAmount, customer, email } = req.body;
   const userEmail = email || customer?.email;
 
   if (!cart || !totalAmount || !userEmail) {
-    return res.status(400).json({
-      status: "error",
-      message: "Missing required fields (cart, totalAmount, email/customer)"
-    });
+    return res.status(400).json({ status: "error", message: "Missing required fields" });
   }
 
   try {
@@ -85,6 +76,7 @@ app.post("/api/checkout", async (req, res) => {
     });
 
     const data = await response.json();
+    console.log("Paystack init response:", data);
 
     if (data.status) {
       return res.json({
@@ -97,14 +89,14 @@ app.post("/api/checkout", async (req, res) => {
       return res.json({ status: "error", message: "Failed to initialize payment" });
     }
   } catch (err) {
-    console.error("Server error during checkout:", err);
+    console.error("Server checkout error:", err);
     return res.status(500).json({ status: "error", message: "Server error" });
   }
 });
 
-// ---------------------------------------
+// ----------------------------
 // VERIFY PAYMENT
-// ---------------------------------------
+// ----------------------------
 app.get("/api/verify-payment", async (req, res) => {
   const reference = req.query.reference;
   if (!reference) return res.status(400).json({ status: "error", message: "Payment reference missing" });
@@ -119,6 +111,7 @@ app.get("/api/verify-payment", async (req, res) => {
     });
 
     const data = await response.json();
+    console.log("Paystack verify response:", data);
 
     if (data.status && data.data.status === "success") {
       const email = data.data.customer.email;
@@ -126,17 +119,8 @@ app.get("/api/verify-payment", async (req, res) => {
       const items = data.data.metadata.cart;
       const customer = data.data.metadata.customer;
 
-      // Save order to MongoDB
-      await Order.create({
-        email,
-        customer,
-        cart: items,
-        totalAmount: amount,
-        reference,
-        paid: true
-      });
-
-      console.log(`Order saved: ${reference}`);
+      // Save order
+      await Order.create({ email, customer, cart: items, totalAmount: amount, reference, paid: true });
 
       // Send confirmation email
       const transporter = nodemailer.createTransport({
@@ -160,17 +144,16 @@ app.get("/api/verify-payment", async (req, res) => {
 
       return res.json({ status: "success", message: "Payment verified and order saved" });
     } else {
-      console.error("Payment verification failed:", data);
       return res.status(400).json({ status: "error", message: "Payment verification failed" });
     }
   } catch (err) {
-    console.error("Error verifying payment:", err);
+    console.error("Verification error:", err);
     return res.status(500).json({ status: "error", message: "Error verifying payment" });
   }
 });
 
-// ---------------------------------------
+// ----------------------------
 // START SERVER
-// ---------------------------------------
+// ----------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
