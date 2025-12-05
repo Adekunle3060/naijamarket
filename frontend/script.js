@@ -29,6 +29,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
 
+    /* Checkout Modal */
+    const checkoutModal = document.getElementById("checkout-modal");
+    const checkoutForm = document.getElementById("checkout-form");
+    const closeCheckout = document.getElementById("close-checkout");
+
     /* =====================================================
           SAFE FETCH WRAPPER
     ===================================================== */
@@ -42,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* =====================================================
-          SMALL UI HELPER
+          HELPER
     ===================================================== */
     function notify(msg) {
         alert(msg);
@@ -165,13 +170,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* =====================================================
-          CHECKOUT → SERVER → PAYSTACK POPUP
+          CHECKOUT MODAL LOGIC
     ===================================================== */
-    async function checkout() {
+    checkoutBtn.addEventListener("click", () => {
         if (!cart.length) return notify("Your cart is empty.");
+        checkoutModal.classList.add("active");
+    });
 
-        const email = prompt("Enter your email:");
-        if (!email) return notify("Email is required.");
+    closeCheckout.addEventListener("click", () => {
+        checkoutModal.classList.remove("active");
+    });
+
+    /* =====================================================
+          UPDATED CHECKOUT → BACKEND → PAYSTACK
+    ===================================================== */
+    checkoutForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const customer = {
+            firstName: document.getElementById("firstName").value.trim(),
+            lastName: document.getElementById("lastName").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            phone: document.getElementById("phone").value.trim(),
+            address: document.getElementById("address").value.trim()
+        };
 
         const totalAmount = cart.reduce((t, i) => t + i.price * i.quantity, 0);
 
@@ -179,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const res = await safeFetch(`${BACKEND_URL}/api/checkout`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ cart, totalAmount, email })
+                body: JSON.stringify({ cart, totalAmount, customer })
             });
 
             const data = await res.json();
@@ -187,16 +209,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 return notify("Failed to initialize payment.");
             }
 
+            checkoutModal.classList.remove("active");
+
             const handler = PaystackPop.setup({
                 key: data.publicKey,
-                email: email,
+                email: customer.email,
                 amount: totalAmount * 100,
                 ref: data.reference,
 
-                onClose: () => notify("Payment popup closed."),
+                onClose: () => notify("Payment canceled."),
 
-                callback: () => {
-                    notify("Payment completed! Thank you.");
+                callback: function (response) {
+                    notify("Payment Successful! Ref: " + response.reference);
                     cart = [];
                     updateCart();
                 }
@@ -206,18 +230,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (err) {
             console.error(err);
-            notify("Something went wrong.");
+            notify("Could not start payment.");
         }
-    }
+    });
 
     /* =====================================================
-          EVENT LISTENERS
+          GENERAL EVENT LISTENERS
     ===================================================== */
     cartIcon.addEventListener('click', () => cartOverlay.classList.add('active'));
     closeCart.addEventListener('click', () => cartOverlay.classList.remove('active'));
     cartOverlay.addEventListener('click', (e) => { if (e.target === cartOverlay) cartOverlay.classList.remove('active'); });
-
-    checkoutBtn.addEventListener('click', checkout);
 
     /* =====================================================
           INITIALIZE PAGE

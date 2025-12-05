@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Naija Market - Authentic Nigerian Products</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --primary-color: #008753;
@@ -19,10 +20,19 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--light-color); color: var(--text-color); line-height: 1.6; }
-        header { background-color: var(--primary-color); color: white; padding: 1rem 2rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+
+        header { 
+            background-color: var(--primary-color); 
+            color: white; padding: 1rem 2rem; 
+            box-shadow: var(--shadow); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+        }
+
         .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
-        .logo { display: flex; align-items: center; gap: 10px; }
         .logo h1 { font-size: 1.5rem; font-weight: 700; }
+
         .cart-icon { position: relative; cursor: pointer; font-size: 1.5rem; }
         .cart-count { position: absolute; top: -10px; right: -10px; background-color: var(--accent-color); color: var(--dark-color); border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
 
@@ -32,7 +42,7 @@
 
         .products-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
         .product-card { background-color: white; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); transition: var(--transition); }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .product-image { height: 200px; width: 100%; object-fit: cover; }
         .product-info { padding: 1.5rem; }
         .product-title { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--dark-color); }
@@ -56,67 +66,134 @@
         .cart-item { display: flex; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
         .cart-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-right: 1rem; }
         .cart-item-details { flex: 1; }
-        .cart-item-title { font-size: 1rem; margin-bottom: 0.5rem; }
-        .cart-item-price { color: var(--primary-color); font-weight: bold; }
+        .quantity-control { display: flex; align-items: center; margin-top: 0.5rem; }
+        .quantity-btn { width: 25px; height: 25px; background-color: #eee; border: none; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .quantity { margin: 0 0.5rem; min-width: 20px; text-align: center; }
         .cart-item-remove { color: #ff4d4d; background: none; border: none; cursor: pointer; font-size: 0.9rem; }
 
         .cart-total { font-size: 1.2rem; font-weight: bold; text-align: right; margin-bottom: 1.5rem; }
         .checkout-btn { width: 100%; padding: 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: var(--transition); margin-bottom: 0.5rem; }
         .checkout-btn:hover { background-color: var(--secondary-color); }
 
-        .empty-cart { text-align: center; padding: 2rem 0; color: #666; }
-
-        .quantity-control { display: flex; align-items: center; margin-top: 0.5rem; }
-        .quantity-btn { width: 25px; height: 25px; background-color: #eee; border: none; border-radius: 4px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .quantity { margin: 0 0.5rem; min-width: 20px; text-align: center; }
-
-        @media (max-width: 768px) { 
-            .products-container { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-            .product-image { height: 160px; }
-            .cart { max-width: 320px; }
+        /* Checkout Modal */
+        .checkout-modal {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
         }
-        @media (max-width: 480px) { 
-            .products-container { grid-template-columns: 1fr; }
-            .cart { max-width: 280px; }
+
+        .checkout-modal.active { display: flex; }
+
+        .checkout-box {
+            width: 95%;
+            max-width: 450px;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
         }
+
+        .checkout-box h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        #checkout-form input,
+        #checkout-form textarea {
+            width: 100%;
+            padding: .75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        #checkout-form textarea { height: 90px; }
+
+        .pay-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .close-checkout {
+            margin-top: .75rem;
+            width: 100%;
+            padding: .75rem;
+            background: #ddd;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
     </style>
 </head>
+
 <body>
-    <header>
-        <div class="header-container">
-            <div class="logo">
-                <h1>Naija Market</h1>
-            </div>
-            <div class="cart-icon" id="cart-icon">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="cart-count" id="cart-count">0</span>
-            </div>
-        </div>
-    </header>
 
-    <main>
-        <h2 class="page-title">Authentic Nigerian Products</h2>
-        <div class="products-container" id="products-container"></div>
-    </main>
-
-    <!-- Cart Overlay -->
-    <div class="cart-overlay" id="cart-overlay">
-        <div class="cart">
-            <div class="cart-header">
-                <h3 class="cart-title">Your Cart</h3>
-                <button class="close-cart" id="close-cart"><i class="fas fa-times"></i></button>
-            </div>
-
-            <div class="cart-items" id="cart-items">
-                <div class="empty-cart">Your cart is empty</div>
-            </div>
-
-            <div class="cart-total" id="cart-total">Total: ₦0.00</div>
-            <button class="checkout-btn" id="checkout-btn">Proceed to Checkout</button>
+<header>
+    <div class="header-container">
+        <div class="logo"><h1>Naija Market</h1></div>
+        <div class="cart-icon" id="cart-icon">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="cart-count" id="cart-count">0</span>
         </div>
     </div>
+</header>
 
-    <script src="https://js.paystack.co/v1/inline.js"></script>
-    <script src="script.js"></script>
+<main>
+    <h2 class="page-title">Authentic Nigerian Products</h2>
+    <div class="products-container" id="products-container"></div>
+</main>
+
+<!-- Cart Overlay -->
+<div class="cart-overlay" id="cart-overlay">
+    <div class="cart">
+        <div class="cart-header">
+            <h3 class="cart-title">Your Cart</h3>
+            <button class="close-cart" id="close-cart"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="cart-items" id="cart-items">
+            <div class="empty-cart">Your cart is empty</div>
+        </div>
+
+        <div class="cart-total" id="cart-total">Total: ₦0.00</div>
+        <button class="checkout-btn" id="checkout-btn">Proceed to Checkout</button>
+    </div>
+</div>
+
+<!-- Checkout Form Modal -->
+<div class="checkout-modal" id="checkout-modal">
+    <div class="checkout-box">
+        <h3>Checkout Details</h3>
+
+        <form id="checkout-form">
+            <input type="text" id="firstName" placeholder="First Name" required>
+            <input type="text" id="lastName" placeholder="Last Name" required>
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="tel" id="phone" placeholder="Phone Number" required>
+            <textarea id="address" placeholder="Full Address" required></textarea>
+
+            <button type="submit" class="pay-btn">Continue to Payment</button>
+        </form>
+
+        <button class="close-checkout" id="close-checkout">Close</button>
+    </div>
+</div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="script.js"></script>
+
 </body>
 </html>
