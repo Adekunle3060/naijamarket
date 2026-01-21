@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function () {
   let cart = [];
   const BACKEND_URL = "https://naijamarket-gtv0.onrender.com";
 
+  // 🔑 REPLACE WITH YOUR PAYSTACK PUBLIC KEY
+  const PAYSTACK_PUBLIC_KEY = "pk_test_9c0c8023c9d5cc025e12c161c8d7a405b281aa8c";
+
   // =========================
   // DOM ELEMENTS
   // =========================
@@ -35,13 +38,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const notify = msg => alert(msg);
 
   // =========================
-  // SAFE FETCH
+  // SAFE FETCH (LONGER TIMEOUT)
   // =========================
-  async function safeFetch(url, options = {}, timeout = 10000) {
+  async function safeFetch(url, options = {}, timeout = 30000) {
     return Promise.race([
       fetch(url, options),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), timeout)
+        setTimeout(() => reject(new Error("Request timeout")), timeout)
       )
     ]);
   }
@@ -50,11 +53,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // RENDER PRODUCTS
   // =========================
   function renderProducts() {
-    productsContainer.innerHTML = '';
+    productsContainer.innerHTML = "";
 
     products.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'product-card';
+      const card = document.createElement("div");
+      card.className = "product-card";
       card.innerHTML = `
         <img src="${p.image}" class="product-image">
         <div class="product-info">
@@ -62,17 +65,15 @@ document.addEventListener('DOMContentLoaded', function () {
           <p class="product-description">${p.description}</p>
           <div class="product-footer">
             <span class="product-price">₦${p.price.toLocaleString()}</span>
-            <button class="add-to-cart" data-id="${p.id}">
-              Add to Cart
-            </button>
+            <button class="add-to-cart" data-id="${p.id}">Add to Cart</button>
           </div>
         </div>
       `;
       productsContainer.appendChild(card);
     });
 
-    document.querySelectorAll('.add-to-cart')
-      .forEach(btn => btn.addEventListener('click', addToCart));
+    document.querySelectorAll(".add-to-cart")
+      .forEach(btn => btn.addEventListener("click", addToCart));
   }
 
   // =========================
@@ -81,9 +82,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function addToCart(e) {
     const id = Number(e.target.dataset.id);
     const product = products.find(p => p.id === id);
-    const exists = cart.find(i => i.id === id);
+    const existing = cart.find(i => i.id === id);
 
-    exists ? exists.quantity++ : cart.push({ ...product, quantity: 1 });
+    existing ? existing.quantity++ : cart.push({ ...product, quantity: 1 });
     updateCart();
   }
 
@@ -93,12 +94,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!cart.length) {
       cartItems.innerHTML = `<div class="empty-cart">Your cart is empty</div>`;
     } else {
-      cartItems.innerHTML = '';
+      cartItems.innerHTML = "";
 
       cart.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'cart-item';
-
+        const div = document.createElement("div");
+        div.className = "cart-item";
         div.innerHTML = `
           <img src="${item.image}" class="cart-item-image">
           <div class="cart-item-details">
@@ -116,19 +116,17 @@ document.addEventListener('DOMContentLoaded', function () {
             </button>
           </div>
         `;
-
         cartItems.appendChild(div);
       });
 
-      document.querySelectorAll('.increase').forEach(btn =>
+      document.querySelectorAll(".increase").forEach(btn =>
         btn.onclick = () => {
-          const item = cart.find(i => i.id === +btn.dataset.id);
-          item.quantity++;
+          cart.find(i => i.id === +btn.dataset.id).quantity++;
           updateCart();
         }
       );
 
-      document.querySelectorAll('.decrease').forEach(btn =>
+      document.querySelectorAll(".decrease").forEach(btn =>
         btn.onclick = () => {
           const item = cart.find(i => i.id === +btn.dataset.id);
           item.quantity > 1
@@ -138,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       );
 
-      document.querySelectorAll('.remove').forEach(btn =>
+      document.querySelectorAll(".remove").forEach(btn =>
         btn.onclick = () => {
           cart = cart.filter(i => i.id !== +btn.dataset.id);
           updateCart();
@@ -153,19 +151,19 @@ document.addEventListener('DOMContentLoaded', function () {
   // =========================
   // UI CONTROLS
   // =========================
-  cartIcon.onclick = () => cartOverlay.classList.add('active');
-  closeCartBtn.onclick = () => cartOverlay.classList.remove('active');
-  closeCheckoutBtn.onclick = () => checkoutModal.classList.remove('active');
+  cartIcon.onclick = () => cartOverlay.classList.add("active");
+  closeCartBtn.onclick = () => cartOverlay.classList.remove("active");
+  closeCheckoutBtn.onclick = () => checkoutModal.classList.remove("active");
 
   checkoutBtn.onclick = () => {
     if (!cart.length) return notify("Cart is empty.");
-    checkoutModal.classList.add('active');
+    checkoutModal.classList.add("active");
   };
 
   // =========================
   // CHECKOUT + PAYSTACK
   // =========================
-  checkoutForm.addEventListener('submit', async e => {
+  checkoutForm.addEventListener("submit", async e => {
     e.preventDefault();
 
     const customer = {
@@ -184,33 +182,49 @@ document.addEventListener('DOMContentLoaded', function () {
       const initRes = await safeFetch(`${BACKEND_URL}/api/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cart, totalAmount, email: customer.email, customer })
+        body: JSON.stringify({
+          cart,
+          totalAmount,
+          email: customer.email,
+          customer
+        })
       });
 
-      const initData = await initRes.json();
-      if (initData.status !== "success") return notify("Payment initialization failed.");
+      if (!initRes.ok) throw new Error("Server error");
 
-      checkoutModal.classList.remove('active');
+      const initData = await initRes.json();
+
+      // ✅ CORRECT CHECK
+      if (!initData.status) {
+        return notify("Payment initialization failed.");
+      }
+
+      const paystackData = initData.data;
+      checkoutModal.classList.remove("active");
 
       const handler = PaystackPop.setup({
-        key: initData.publicKey,
+        key: PAYSTACK_PUBLIC_KEY,
         email: customer.email,
         amount: totalAmount * 100,
-        ref: initData.reference,
+        ref: paystackData.reference,
+
         onClose: () => notify("Payment cancelled."),
-        callback: async response => {
+
+        callback: async function (response) {
           try {
             const verifyRes = await fetch(
               `${BACKEND_URL}/api/verify-payment?reference=${response.reference}`
             );
             const verifyData = await verifyRes.json();
 
-            if (verifyData.status === "success") {
+            if (verifyData.status === true || verifyData.status === "success") {
               notify("Payment verified and order saved!");
               cart = [];
               updateCart();
-              cartOverlay.classList.remove('active');
-            } else notify("Payment verification failed.");
+              cartOverlay.classList.remove("active");
+            } else {
+              notify("Payment verification failed.");
+            }
           } catch {
             notify("Verification failed.");
           }
@@ -219,12 +233,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       handler.openIframe();
 
-    
     } catch (err) {
-        console.error("Checkout error:", err);
-        notify("Checkout failed. Check console for details.");
+      console.error(err);
+      notify("Checkout failed. Try again.");
     }
-});
+  });
+
   // =========================
   // INIT
   // =========================
