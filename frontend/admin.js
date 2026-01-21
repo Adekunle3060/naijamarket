@@ -18,24 +18,23 @@ loginBtn.addEventListener("click", async () => {
 
     ADMIN_PASSWORD = password;
 
+    // Try loading orders with this password
     try {
-        const response = await fetch(`${BACKEND_URL}/admin/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password })
+        const response = await fetch(`${BACKEND_URL}/api/orders`, {
+            headers: { "x-admin-password": ADMIN_PASSWORD }
         });
 
-        const data = await response.json();
-
-        if (!data.success) {
+        if (response.status === 401) {
             alert("Invalid admin password!");
             return;
         }
 
-        // Success
+        // Success — show dashboard
         loginSection.style.display = "none";
         ordersSection.style.display = "block";
-        loadOrders();
+
+        const orders = await response.json();
+        displayOrders(orders);
 
     } catch (err) {
         console.error("Login Error:", err);
@@ -49,14 +48,17 @@ async function loadOrders() {
     ordersContainer.innerHTML = `<p style="padding:10px;">Loading orders...</p>`;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/admin/orders`);
-        const orders = await response.json();
+        const response = await fetch(`${BACKEND_URL}/api/orders`, {
+            headers: { "x-admin-password": ADMIN_PASSWORD }
+        });
 
-        if (!orders.length) {
-            ordersContainer.innerHTML = `<p>No orders found.</p>`;
+        if (response.status === 401) {
+            alert("Session expired. Login again!");
+            location.reload();
             return;
         }
 
+        const orders = await response.json();
         displayOrders(orders);
 
     } catch (err) {
@@ -70,16 +72,15 @@ async function loadOrders() {
 // ---------------------- DISPLAY ORDERS -------------------------
 function displayOrders(orders) {
     let html = `
-        <table>
+        <table class="order-table">
             <thead>
                 <tr>
-                    <th>Customer</th>
-                    <th>Phone</th>
-                    <th>Address</th>
-                    <th>Item</th>
-                    <th>Amount</th>
+                    <th>Email</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Reference</th>
+                    <th>Date</th>
                     <th>Payment</th>
-                    <th>Update</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,31 +89,20 @@ function displayOrders(orders) {
     orders.forEach(order => {
         html += `
             <tr>
-                <td>${order.name}</td>
-                <td>${order.phone}</td>
-                <td>${order.address}</td>
-                <td>${order.productName}</td>
-                <td>₦${order.amount.toLocaleString()}</td>
-
+                <td>${order.email}</td>
                 <td>
-                    <span class="${order.paymentStatus === 'paid' ? 'status-paid' : 'status-unpaid'}">
-                        ${order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                    </span>
+                    ${order.cart.map(i => `
+                        <div>${i.name} x ${i.quantity}</div>
+                    `).join("")}
                 </td>
+                <td>₦${order.totalAmount.toLocaleString()}</td>
+                <td>${order.reference}</td>
+                <td>${new Date(order.date).toLocaleString()}</td>
 
                 <td>
-                    <button 
-                        onclick="updatePayment('${order._id}', '${order.paymentStatus}')"
-                        style="
-                            padding:8px 12px;
-                            border:none; 
-                            background:#4a6bff;
-                            color:white; 
-                            border-radius:8px;
-                            cursor:pointer;
-                        ">
-                        Mark ${order.paymentStatus === "paid" ? "Unpaid" : "Paid"}
-                    </button>
+                    <span class="${order.paid ? 'status-paid' : 'status-unpaid'}">
+                        ${order.paid ? 'Paid' : 'Unpaid'}
+                    </span>
                 </td>
             </tr>
         `;
@@ -125,42 +115,12 @@ function displayOrders(orders) {
 
 
 
-// ---------------------- UPDATE PAYMENT STATUS -------------------------
-async function updatePayment(orderId, currentStatus) {
-    const newStatus = currentStatus === "paid" ? "unpaid" : "paid";
-
-    if (!confirm(`Are you sure you want to mark this order as ${newStatus}?`)) return;
-
-    try {
-        const response = await fetch(`${BACKEND_URL}/admin/update-payment`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: orderId, paymentStatus: newStatus })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            alert("Payment status updated!");
-            loadOrders(); // Refresh table
-        } else {
-            alert("Failed to update.");
-        }
-
-    } catch (err) {
-        console.error("Update Error:", err);
-        alert("Server error while updating payment.");
-    }
-}
-
-
-
-// ---------------------- OPTIONAL: AUTO-REFRESH BUTTON -------------------------
+// ---------------------- REFRESH BUTTON -------------------------
 const refreshBtn = document.createElement("button");
 refreshBtn.textContent = "Refresh Orders";
 refreshBtn.style.cssText = `
-    margin-top: 15px;
-    padding: 10px 15px;
+    margin-bottom: 15px;
+    padding: 10px 18px;
     background: #2f4fe0;
     color: white;
     border: none;
