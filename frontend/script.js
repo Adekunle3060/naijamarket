@@ -219,11 +219,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       handler.openIframe();
 
-    } catch {
-      notify("Checkout failed. Try again.");
+    
+    } catch (err) {
+        console.error("Checkout error:", err);
+        notify("Checkout failed. Check console for details.");
     }
-  });
-
+});
   // =========================
   // INIT
   // =========================
