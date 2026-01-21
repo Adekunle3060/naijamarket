@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 
 // ---------------- CONFIG ----------------
-const FRONTEND_URLS = ["https://naijamarket-three.vercel.app/"];
+const FRONTEND_URLS = [process.env.FRONTEND_URL]; // Set in Render.com or .env
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY;
 
@@ -33,8 +33,23 @@ const orderSchema = new mongoose.Schema({
 const Order = mongoose.model("Order", orderSchema);
 
 // ---------------- MIDDLEWARE ----------------
-app.use(cors({ origin: FRONTEND_URLS, methods: ["GET", "POST", "PUT"] }));
 app.use(bodyParser.json());
+
+// ✅ CORS middleware
+app.use(cors({
+  origin: function(origin, callback) {
+    // allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+
+    if (FRONTEND_URLS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin} is not allowed`));
+    }
+  },
+  methods: ["GET", "POST", "PUT"],
+  credentials: true
+}));
 
 // ---------------- ROOT ----------------
 app.get("/", (req, res) => res.send("Backend running..."));
@@ -108,6 +123,7 @@ app.get("/api/verify-payment", async (req, res) => {
       const items = data.data.metadata.cart;
       const customer = data.data.metadata.customer;
 
+      // Save order
       await Order.create({ email, customer, cart: items, totalAmount: amount, reference, paid: true });
 
       // Send confirmation email
