@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
+  // =========================
+  // PRODUCTS
+  // =========================
   const products = [
     { id: 1, name: "Adire Fabric", description: "Traditional Yoruba tie-dye fabric.", price: 4500, image: "https://img001.prntscr.com/file/img001/M9zSmJz-RQKMODRAYvke-g.jpg" },
     { id: 2, name: "Ofada Rice", description: "Locally grown aromatic rice.", price: 3500, image: "https://img001.prntscr.com/file/img001/ZLlbltDlRBGFdG7wKFp-GA.jpg" },
@@ -14,7 +17,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const BACKEND_URL = "https://naijamarket-gtv0.onrender.com";
   const PAYSTACK_PUBLIC_KEY = "pk_test_9c0c8023c9d5cc025e12c161c8d7a405b281aa8c";
 
-  // DOM Elements
+  // =========================
+  // DOM ELEMENTS
+  // =========================
   const productsContainer = document.getElementById("products-container");
   const cartCount = document.getElementById("cart-count");
   const cartItems = document.getElementById("cart-items");
@@ -35,7 +40,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const notify = msg => alert(msg);
 
+  // =========================
   // SAFE FETCH
+  // =========================
   async function safeFetch(url, options = {}, timeout = 30000) {
     return Promise.race([
       fetch(url, options),
@@ -43,7 +50,9 @@ document.addEventListener("DOMContentLoaded", function () {
     ]);
   }
 
+  // =========================
   // RENDER PRODUCTS
+  // =========================
   function renderProducts() {
     productsContainer.innerHTML = "";
     products.forEach(p => {
@@ -66,7 +75,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".add-to-cart").forEach(btn => btn.addEventListener("click", addToCart));
   }
 
+  // =========================
   // CART LOGIC
+  // =========================
   function addToCart(e) {
     const id = Number(e.target.dataset.id);
     const product = products.find(p => p.id === id);
@@ -119,14 +130,18 @@ document.addEventListener("DOMContentLoaded", function () {
     cartTotal.textContent = `Total: ₦${cart.reduce((t, i) => t + i.price * i.quantity, 0).toLocaleString()}`;
   }
 
+  // =========================
   // UI CONTROLS
+  // =========================
   cartIcon.onclick = () => cartOverlay.classList.add("active");
   closeCartBtn.onclick = () => cartOverlay.classList.remove("active");
   closeCheckoutBtn.onclick = () => checkoutModal.classList.remove("active");
   checkoutBtn.onclick = () => { if (!cart.length) return notify("Cart is empty."); checkoutModal.classList.add("active"); };
 
+  // =========================
   // CHECKOUT + PAYSTACK
-  checkoutForm.addEventListener("submit", async e => {
+  // =========================
+  checkoutForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
     const customer = {
@@ -139,55 +154,59 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const totalAmount = cart.reduce((t, i) => t + i.price * i.quantity, 0);
 
-    try {
-      const initRes = await safeFetch(`${BACKEND_URL}/api/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cart, totalAmount, customer, email: customer.email })
-      });
+    safeFetch(`${BACKEND_URL}/api/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cart, totalAmount, customer, email: customer.email })
+    })
+      .then(res => res.json())
+      .then(initData => {
+        console.log("Checkout init data:", initData);
 
-      const initData = await initRes.json();
-      console.log("Checkout init data:", initData);
-
-      if (!initData.status || !initData.data?.reference) {
-        return notify(initData.message || "Payment initialization failed.");
-      }
-
-      const handler = PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: customer.email,
-        amount: totalAmount * 100,
-        ref: initData.data.reference,
-        onClose: () => notify("Payment cancelled."),
-        callback: async function(response) {
-          try {
-            const verifyRes = await fetch(`${BACKEND_URL}/api/verify-payment?reference=${response.reference}`);
-            const verifyData = await verifyRes.json();
-
-            if (verifyData.status === true) {
-              notify("Payment verified and order saved!");
-              cart = [];
-              updateCart();
-              cartOverlay.classList.remove("active");
-              window.location.href = `/payment-status.html?reference=${response.reference}`;
-            } else {
-              notify(verifyData.message || "Payment verification failed.");
-            }
-          } catch {
-            notify("Verification failed.");
-          }
+        if (!initData.status || !initData.data?.reference) {
+          return notify(initData.message || "Payment initialization failed.");
         }
+
+        const handler = PaystackPop.setup({
+          key: PAYSTACK_PUBLIC_KEY,
+          email: customer.email,
+          amount: totalAmount * 100,
+          ref: initData.data.reference,
+          onClose: () => notify("Payment cancelled."),
+
+          // ✅ Fixed callback (must be plain function)
+          callback: function (response) {
+            fetch(`${BACKEND_URL}/api/verify-payment?reference=${response.reference}`)
+              .then(res => res.json())
+              .then(verifyData => {
+                if (verifyData.status === true) {
+                  notify("Payment verified and order saved!");
+                  cart = [];
+                  updateCart();
+                  cartOverlay.classList.remove("active");
+                  window.location.href = `/payment-status.html?reference=${response.reference}`;
+                } else {
+                  notify(verifyData.message || "Payment verification failed.");
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                notify("Verification failed.");
+              });
+          }
+        });
+
+        handler.openIframe();
+      })
+      .catch(err => {
+        console.error(err);
+        notify("Checkout failed. Try again.");
       });
-
-      handler.openIframe();
-
-    } catch (err) {
-      console.error(err);
-      notify("Checkout failed. Try again.");
-    }
   });
 
+  // =========================
   // INIT
+  // =========================
   renderProducts();
   updateCart();
 });
