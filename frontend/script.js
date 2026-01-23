@@ -20,13 +20,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // =========================
   // CLEAR CART AFTER PAYMENT
-  
- if (localStorage.getItem("payment_success") === "true") {
-  alert("Thank you! Your order was successful 🎉");
-  localStorage.removeItem("payment_success");
-}
- // =========================
- 
+  // =========================
+  if (localStorage.getItem("payment_success") === "true") {
+    localStorage.removeItem("payment_success");
+    cart = [];
+  }
 
   // =========================
   // DOM ELEMENTS
