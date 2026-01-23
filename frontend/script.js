@@ -14,8 +14,9 @@ document.addEventListener("DOMContentLoaded", function () {
   ];
 
   let cart = [];
+
+  // 🔥 Backend hosted on Render
   const BACKEND_URL = "https://naijamarket-gtv0.onrender.com";
-  const PAYSTACK_PUBLIC_KEY = "pk_test_9c0c8023c9d5cc025e12c161c8d7a405b281aa8c";
 
   // =========================
   // DOM ELEMENTS
@@ -46,7 +47,9 @@ document.addEventListener("DOMContentLoaded", function () {
   async function safeFetch(url, options = {}, timeout = 30000) {
     return Promise.race([
       fetch(url, options),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Request timeout")), timeout))
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), timeout)
+      )
     ]);
   }
 
@@ -72,7 +75,9 @@ document.addEventListener("DOMContentLoaded", function () {
       productsContainer.appendChild(card);
     });
 
-    document.querySelectorAll(".add-to-cart").forEach(btn => btn.addEventListener("click", addToCart));
+    document
+      .querySelectorAll(".add-to-cart")
+      .forEach(btn => btn.addEventListener("click", addToCart));
   }
 
   // =========================
@@ -82,6 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const id = Number(e.target.dataset.id);
     const product = products.find(p => p.id === id);
     const existing = cart.find(i => i.id === id);
+
     existing ? existing.quantity++ : cart.push({ ...product, quantity: 1 });
     updateCart();
   }
@@ -112,22 +118,33 @@ document.addEventListener("DOMContentLoaded", function () {
         cartItems.appendChild(div);
       });
 
-      document.querySelectorAll(".increase").forEach(btn => btn.onclick = () => {
-        cart.find(i => i.id === +btn.dataset.id).quantity++;
-        updateCart();
+      document.querySelectorAll(".increase").forEach(btn => {
+        btn.onclick = () => {
+          cart.find(i => i.id === +btn.dataset.id).quantity++;
+          updateCart();
+        };
       });
-      document.querySelectorAll(".decrease").forEach(btn => btn.onclick = () => {
-        const item = cart.find(i => i.id === +btn.dataset.id);
-        item.quantity > 1 ? item.quantity-- : cart = cart.filter(i => i.id !== item.id);
-        updateCart();
+
+      document.querySelectorAll(".decrease").forEach(btn => {
+        btn.onclick = () => {
+          const item = cart.find(i => i.id === +btn.dataset.id);
+          item.quantity > 1
+            ? item.quantity--
+            : (cart = cart.filter(i => i.id !== item.id));
+          updateCart();
+        };
       });
-      document.querySelectorAll(".remove").forEach(btn => btn.onclick = () => {
-        cart = cart.filter(i => i.id !== +btn.dataset.id);
-        updateCart();
+
+      document.querySelectorAll(".remove").forEach(btn => {
+        btn.onclick = () => {
+          cart = cart.filter(i => i.id !== +btn.dataset.id);
+          updateCart();
+        };
       });
     }
 
-    cartTotal.textContent = `Total: ₦${cart.reduce((t, i) => t + i.price * i.quantity, 0).toLocaleString()}`;
+    cartTotal.textContent =
+      `Total: ₦${cart.reduce((t, i) => t + i.price * i.quantity, 0).toLocaleString()}`;
   }
 
   // =========================
@@ -136,7 +153,11 @@ document.addEventListener("DOMContentLoaded", function () {
   cartIcon.onclick = () => cartOverlay.classList.add("active");
   closeCartBtn.onclick = () => cartOverlay.classList.remove("active");
   closeCheckoutBtn.onclick = () => checkoutModal.classList.remove("active");
-  checkoutBtn.onclick = () => { if (!cart.length) return notify("Cart is empty."); checkoutModal.classList.add("active"); };
+
+  checkoutBtn.onclick = () => {
+    if (!cart.length) return notify("Cart is empty.");
+    checkoutModal.classList.add("active");
+  };
 
   // =========================
   // CHECKOUT + PAYSTACK
@@ -157,42 +178,50 @@ document.addEventListener("DOMContentLoaded", function () {
     safeFetch(`${BACKEND_URL}/api/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cart, totalAmount, customer, email: customer.email })
+      body: JSON.stringify({
+        cart,
+        totalAmount,
+        customer,
+        email: customer.email
+      })
     })
       .then(res => res.json())
       .then(initData => {
-        console.log("Checkout init data:", initData);
-
-        if (!initData.status || !initData.data?.reference) {
-          return notify(initData.message || "Payment initialization failed.");
+        if (!initData.status) {
+          return notify(initData.message || "Payment initialization failed");
         }
 
+        checkoutModal.classList.remove("active");
+
         const handler = PaystackPop.setup({
-          key: PAYSTACK_PUBLIC_KEY,
+          key: initData.data.publicKey, // ✅ from backend
           email: customer.email,
           amount: totalAmount * 100,
           ref: initData.data.reference,
-          onClose: () => notify("Payment cancelled."),
 
-          // ✅ Fixed callback (must be plain function)
+          onClose: function () {
+            notify("Payment cancelled.");
+          },
+
           callback: function (response) {
             fetch(`${BACKEND_URL}/api/verify-payment?reference=${response.reference}`)
               .then(res => res.json())
               .then(verifyData => {
                 if (verifyData.status === true) {
-                  notify("Payment verified and order saved!");
+                  notify("Payment successful! Redirecting to homepage...");
+
                   cart = [];
                   updateCart();
                   cartOverlay.classList.remove("active");
-                  window.location.href = `/payment-status.html?reference=${response.reference}`;
+
+                  setTimeout(() => {
+                    window.location.replace("/"); // ✅ Vercel homepage
+                  }, 2000);
                 } else {
                   notify(verifyData.message || "Payment verification failed.");
                 }
               })
-              .catch(err => {
-                console.error(err);
-                notify("Verification failed.");
-              });
+              .catch(() => notify("Verification failed."));
           }
         });
 
