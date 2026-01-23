@@ -15,8 +15,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let cart = [];
 
-  // 🔥 Backend hosted on Render
+  // 🔥 Backend (Render)
   const BACKEND_URL = "https://naijamarket-gtv0.onrender.com";
+
+  // =========================
+  // CLEAR CART AFTER PAYMENT
+  
+ if (localStorage.getItem("payment_success") === "true") {
+  alert("Thank you! Your order was successful 🎉");
+  localStorage.removeItem("payment_success");
+}
+ // =========================
+ 
 
   // =========================
   // DOM ELEMENTS
@@ -194,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
         checkoutModal.classList.remove("active");
 
         const handler = PaystackPop.setup({
-          key: initData.data.publicKey, // ✅ from backend
+          key: initData.data.publicKey,
           email: customer.email,
           amount: totalAmount * 100,
           ref: initData.data.reference,
@@ -214,9 +224,12 @@ document.addEventListener("DOMContentLoaded", function () {
                   updateCart();
                   cartOverlay.classList.remove("active");
 
+                  // ✅ Flag for homepage refresh
+                  localStorage.setItem("payment_success", "true");
+
                   setTimeout(() => {
-                    window.location.replace("/"); // ✅ Vercel homepage
-                  }, 2000);
+                    window.location.replace("/");
+                  }, 1500);
                 } else {
                   notify(verifyData.message || "Payment verification failed.");
                 }
