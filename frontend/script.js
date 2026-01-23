@@ -13,13 +13,18 @@ document.addEventListener("DOMContentLoaded", function () {
     { id: 8, name: "Bitter Leaf", description: "Dried bitter leaf.", price: 1200, image: "https://img001.prntscr.com/file/img001/XJlAs3_GQG69recaRCGnqQ.jpg" }
   ];
 
-  // =========================
-  // CART
-  // =========================
-  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  let cart = [];
 
-  // Backend
+  // 🔥 Backend (Render)
   const BACKEND_URL = "https://naijamarket-gtv0.onrender.com";
+
+  // =========================
+  // CLEAR CART AFTER PAYMENT
+  // =========================
+  if (localStorage.getItem("payment_success") === "true") {
+    localStorage.removeItem("payment_success");
+    cart = [];
+  }
 
   // =========================
   // DOM ELEMENTS
@@ -45,19 +50,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const notify = msg => alert(msg);
 
   // =========================
-  // SAVE CART TO LOCALSTORAGE
-  // =========================
-  function saveCart() {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }
-
-  // =========================
   // SAFE FETCH
   // =========================
   async function safeFetch(url, options = {}, timeout = 30000) {
     return Promise.race([
       fetch(url, options),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Request timeout")), timeout))
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), timeout)
+      )
     ]);
   }
 
@@ -83,7 +83,9 @@ document.addEventListener("DOMContentLoaded", function () {
       productsContainer.appendChild(card);
     });
 
-    document.querySelectorAll(".add-to-cart").forEach(btn => btn.addEventListener("click", addToCart));
+    document
+      .querySelectorAll(".add-to-cart")
+      .forEach(btn => btn.addEventListener("click", addToCart));
   }
 
   // =========================
@@ -93,6 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const id = Number(e.target.dataset.id);
     const product = products.find(p => p.id === id);
     const existing = cart.find(i => i.id === id);
+
     existing ? existing.quantity++ : cart.push({ ...product, quantity: 1 });
     updateCart();
   }
@@ -133,7 +136,9 @@ document.addEventListener("DOMContentLoaded", function () {
       document.querySelectorAll(".decrease").forEach(btn => {
         btn.onclick = () => {
           const item = cart.find(i => i.id === +btn.dataset.id);
-          item.quantity > 1 ? item.quantity-- : (cart = cart.filter(i => i.id !== item.id));
+          item.quantity > 1
+            ? item.quantity--
+            : (cart = cart.filter(i => i.id !== item.id));
           updateCart();
         };
       });
@@ -148,9 +153,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     cartTotal.textContent =
       `Total: ₦${cart.reduce((t, i) => t + i.price * i.quantity, 0).toLocaleString()}`;
-
-    // Save to localStorage every update
-    saveCart();
   }
 
   // =========================
@@ -159,6 +161,7 @@ document.addEventListener("DOMContentLoaded", function () {
   cartIcon.onclick = () => cartOverlay.classList.add("active");
   closeCartBtn.onclick = () => cartOverlay.classList.remove("active");
   closeCheckoutBtn.onclick = () => checkoutModal.classList.remove("active");
+
   checkoutBtn.onclick = () => {
     if (!cart.length) return notify("Cart is empty.");
     checkoutModal.classList.add("active");
@@ -192,7 +195,9 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then(res => res.json())
       .then(initData => {
-        if (!initData.status) return notify(initData.message || "Payment initialization failed");
+        if (!initData.status) {
+          return notify(initData.message || "Payment initialization failed");
+        }
 
         checkoutModal.classList.remove("active");
 
@@ -201,7 +206,11 @@ document.addEventListener("DOMContentLoaded", function () {
           email: customer.email,
           amount: totalAmount * 100,
           ref: initData.data.reference,
-          onClose: () => notify("Payment cancelled."),
+
+          onClose: function () {
+            notify("Payment cancelled.");
+          },
+
           callback: function (response) {
             fetch(`${BACKEND_URL}/api/verify-payment?reference=${response.reference}`)
               .then(res => res.json())
@@ -209,17 +218,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (verifyData.status === true) {
                   notify("Payment successful! Redirecting to homepage...");
 
-                  // Clear cart memory + localStorage
                   cart = [];
-                  saveCart();
                   updateCart();
                   cartOverlay.classList.remove("active");
 
-                  // Set a flag for refresh (optional)
+                  // ✅ Flag for homepage refresh
                   localStorage.setItem("payment_success", "true");
 
-                  setTimeout(() => window.location.replace("/"), 1500);
-                } else notify(verifyData.message || "Payment verification failed.");
+                  setTimeout(() => {
+                    window.location.replace("/");
+                  }, 1500);
+                } else {
+                  notify(verifyData.message || "Payment verification failed.");
+                }
               })
               .catch(() => notify("Verification failed."));
           }
