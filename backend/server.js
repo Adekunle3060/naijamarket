@@ -10,9 +10,10 @@ dotenv.config();
 const app = express();
 
 // ---------------- CONFIG ----------------
-const FRONTEND_URLS = [process.env.FRONTEND_URL]; // Set in Render.com or .env
+const FRONTEND_URLS = [process.env.FRONTEND_URL]; // your frontend URLs
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // ---------------- MONGODB ----------------
 mongoose
@@ -28,24 +29,18 @@ const orderSchema = new mongoose.Schema({
   totalAmount: Number,
   reference: String,
   paid: Boolean,
+  fulfilled: { type: Boolean, default: false },
   date: { type: Date, default: Date.now }
 });
 const Order = mongoose.model("Order", orderSchema);
 
 // ---------------- MIDDLEWARE ----------------
 app.use(bodyParser.json());
-
-// ✅ CORS middleware
 app.use(cors({
   origin: function(origin, callback) {
-    // allow requests with no origin (like Postman)
     if (!origin) return callback(null, true);
-
-    if (FRONTEND_URLS.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked: ${origin} is not allowed`));
-    }
+    if (FRONTEND_URLS.includes(origin)) callback(null, true);
+    else callback(new Error(`CORS blocked: ${origin} is not allowed`));
   },
   methods: ["GET", "POST", "PUT"],
   credentials: true
@@ -72,7 +67,7 @@ app.post("/api/checkout", async (req, res) => {
       },
       body: JSON.stringify({
         email: userEmail,
-        amount: totalAmount * 100, // Paystack expects kobo
+        amount: totalAmount * 100,
         currency: "NGN",
         metadata: { cart, customer }
       })
@@ -153,6 +148,38 @@ app.get("/api/verify-payment", async (req, res) => {
   } catch (err) {
     console.error("Verification error:", err);
     return res.status(500).json({ status: false, message: "Error verifying payment" });
+  }
+});
+
+// ---------------- ADMIN: GET ORDERS ----------------
+app.get("/api/orders", async (req, res) => {
+  const adminPassword = req.headers["x-admin-password"];
+  if (!adminPassword || adminPassword !== ADMIN_PASSWORD) {
+    return res.status(401).json({ status: false, message: "Unauthorized" });
+  }
+
+  try {
+    const orders = await Order.find().sort({ date: -1 });
+    res.json(orders);
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+// ---------------- ADMIN: MARK ORDER FULFILLED ----------------
+app.put("/api/orders/:id/fulfill", async (req, res) => {
+  const adminPassword = req.headers["x-admin-password"];
+  if (!adminPassword || adminPassword !== ADMIN_PASSWORD) {
+    return res.status(401).json({ status: false, message: "Unauthorized" });
+  }
+
+  try {
+    const order = await Order.findByIdAndUpdate(req.params.id, { fulfilled: true }, { new: true });
+    res.json(order);
+  } catch (err) {
+    console.error("Error fulfilling order:", err);
+    res.status(500).json({ status: false, message: "Server error" });
   }
 });
 
